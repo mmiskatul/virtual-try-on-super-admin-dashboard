@@ -100,8 +100,7 @@ export function AdminSidebar({ activeTab, onSelectTab, tenantCount }: AdminSideb
             </span>
           </div>
           <div className="text-[11px] font-mono text-slate-500 space-y-0.5">
-            <p>brand-api: :4001</p>
-            <p>marketplace-api: :4002</p>
+            <p>backend-api: :4000</p>
             <p>ai-service: :8000</p>
           </div>
         </div>

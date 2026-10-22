@@ -1,9 +1,9 @@
 /**
  * Production API Client for Super Admin Governance Dashboard
- * Handles authenticated communication with super-admin-api (:4003) and ai-service (:8000)
+ * Handles authenticated communication with backend-api (:4000) and ai-service (:8000)
  */
 
-const SUPER_ADMIN_API_URL = process.env.NEXT_PUBLIC_SUPER_ADMIN_API_URL || 'http://localhost:4003';
+const SUPER_ADMIN_API_URL = process.env.NEXT_PUBLIC_SUPER_ADMIN_API_URL || 'http://localhost:4000';
 const AI_SERVICE_URL = process.env.NEXT_PUBLIC_AI_SERVICE_URL || 'http://localhost:8000';
 
 export class ApiError extends Error {
@@ -88,5 +88,24 @@ export const superAdminApi = {
 
   getAiModels: () => {
     return request<any>(`${AI_SERVICE_URL}/api/v1/models`);
+  },
+
+  // AI Engine Management & Model Control
+  getAiEngineConfig: () => {
+    return request<any>(`${SUPER_ADMIN_API_URL}/api/v1/admin/ai-engine/config`);
+  },
+
+  updateAiEngineConfig: (configPayload: any) => {
+    return request<any>(`${SUPER_ADMIN_API_URL}/api/v1/admin/ai-engine/config`, {
+      method: 'POST',
+      body: JSON.stringify(configPayload)
+    });
+  },
+
+  testAiEngineKey: (testPayload: { provider: string; apiKey?: string; model?: string }) => {
+    return request<any>(`${SUPER_ADMIN_API_URL}/api/v1/admin/ai-engine/test-key`, {
+      method: 'POST',
+      body: JSON.stringify(testPayload)
+    });
   }
 };
