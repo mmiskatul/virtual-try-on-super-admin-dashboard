@@ -75,7 +75,7 @@ export function AdminSidebar({ activeTab, onSelectTab, tenantCount }: AdminSideb
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
-            <Database className="w-4 h-4" /> SMTP & Supabase DB
+            <Database className="w-4 h-4" /> SMTP &amp; Database DB
           </button>
           <button
             onClick={() => onSelectTab('subscriptions')}

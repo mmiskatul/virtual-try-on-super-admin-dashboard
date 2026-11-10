@@ -224,7 +224,7 @@ export function InfrastructureConfig() {
       setDbFeedback({ success: true, message: res.message });
       await loadConfig();
     } catch (err: any) {
-      setDbFeedback({ success: false, message: err?.message || 'Failed to sync snapshot data to Supabase.' });
+      setDbFeedback({ success: false, message: err?.message || 'Failed to sync snapshot data to PostgreSQL.' });
     } finally {
       setSyncingDb(false);
     }
@@ -234,7 +234,7 @@ export function InfrastructureConfig() {
     return (
       <div className="flex flex-col items-center justify-center p-16 space-y-4 text-slate-400">
         <Loader2 className="w-8 h-8 animate-spin text-amber-400" />
-        <p className="text-sm font-semibold">Loading SMTP &amp; Supabase Infrastructure Configuration...</p>
+        <p className="text-sm font-semibold">Loading SMTP &amp; PostgreSQL Infrastructure Configuration...</p>
       </div>
     );
   }
@@ -247,10 +247,10 @@ export function InfrastructureConfig() {
           <div className="space-y-1">
             <h2 className="text-xl font-extrabold text-white flex items-center gap-2.5">
               <Server className="w-5 h-5 text-amber-400" />
-              SMTP Email Transport &amp; Supabase Database Control
+              SMTP Email Transport &amp; PostgreSQL Database Control
             </h2>
             <p className="text-xs text-slate-400">
-              Configure real-time SMTP email verification/recovery delivery and connect Supabase PostgreSQL persistence without restarting the server.
+              Configure real-time SMTP email verification/recovery delivery and connect NeonDB, Supabase, or PostgreSQL persistence without restarting the server.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -481,7 +481,7 @@ export function InfrastructureConfig() {
                 <Database className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="font-bold text-sm text-white">Supabase PostgreSQL Database</h3>
+                <h3 className="font-bold text-sm text-white">{info?.database.provider || 'PostgreSQL'} Database</h3>
                 <p className="text-[11px] text-slate-400">Authoritative persistence for users, tokens, tenants, &amp; orders</p>
               </div>
             </div>
@@ -527,7 +527,7 @@ export function InfrastructureConfig() {
           <div className="space-y-3">
             <div className="space-y-1">
               <label className="block text-xs font-semibold text-slate-300">
-                Supabase PostgreSQL Connection URI (DATABASE_URL)
+                PostgreSQL Connection URI (DATABASE_URL)
               </label>
               <div className="relative">
                 <input
@@ -537,7 +537,7 @@ export function InfrastructureConfig() {
                   placeholder={
                     info?.database.maskedDatabaseUrl
                       ? `Active (${info.database.maskedDatabaseUrl}) — paste to switch`
-                      : 'postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres'
+                      : 'postgresql://user:password@ep-...-pooler.aws.neon.tech/neondb?sslmode=require'
                   }
                   className="w-full pl-3 pr-9 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
                 />
@@ -550,7 +550,7 @@ export function InfrastructureConfig() {
                 </button>
               </div>
               <p className="text-[10px] text-slate-500">
-                Supports Supabase Session/Transaction Pooler (`pooler.supabase.com:6543`) and Direct Connection (`db.*.supabase.co:5432`) with automatic SSL.
+                Supports NeonDB (`*.neon.tech`), Supabase Pooler/Direct, and standard PostgreSQL URIs with automatic SSL.
               </p>
             </div>
           </div>
@@ -563,7 +563,7 @@ export function InfrastructureConfig() {
               className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 border border-slate-700 disabled:opacity-50"
             >
               {testingDb ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5 text-emerald-400" />}
-              <span>Test Supabase Connection</span>
+              <span>Test DB Connection</span>
             </button>
 
             <button
@@ -584,7 +584,7 @@ export function InfrastructureConfig() {
             className="w-full py-2.5 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 border border-slate-800 disabled:opacity-50"
           >
             {syncingDb ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UploadCloud className="w-3.5 h-3.5 text-sky-400" />}
-            <span>Sync Local Seed / Snapshot Records to Supabase</span>
+            <span>Sync Local Seed / Snapshot Records to {info?.database.provider || 'PostgreSQL'}</span>
           </button>
 
           {dbFeedback && (
