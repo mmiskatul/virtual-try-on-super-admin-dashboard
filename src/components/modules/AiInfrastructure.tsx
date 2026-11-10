@@ -43,7 +43,7 @@ export function AiInfrastructure() {
   // Configuration state
   const [activeProvider, setActiveProvider] = useState('gemini');
   const [geminiKey, setGeminiKey] = useState('');
-  const [geminiModel, setGeminiModel] = useState('gemini-flash-latest');
+  const [geminiModel, setGeminiModel] = useState('gemini-3.6-flash');
   const [falKey, setFalKey] = useState('');
   const [fallbackEnabled, setFallbackEnabled] = useState(true);
 
@@ -367,11 +367,14 @@ export function AiInfrastructure() {
                 onChange={(e) => setGeminiModel(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-purple-500 transition-colors"
               >
-                <option value="gemini-flash-latest">gemini-flash-latest (Recommended - Fastest Multimodal)</option>
-                <option value="gemini-3.8-flash">gemini-3.8-flash (High-Throughput Vision)</option>
-                <option value="gemini-3.5-flash">gemini-3.5-flash</option>
-                <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                <option value="gemini-3.6-flash">gemini-3.6-flash (Recommended - Verified Working Vision)</option>
+                <option value="gemini-3.5-flash">gemini-3.5-flash (Multimodal Vision)</option>
+                <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Lowest Latency Vision)</option>
+                <option value="gemini-3.1-flash-lite">gemini-3.1-flash-lite (Fast Lite Vision)</option>
                 <option value="gemini-pro-latest">gemini-pro-latest (Deep Analytical Reasoning)</option>
+                <option value="gemini-3.1-flash-image">gemini-3.1-flash-image (Nano Banana 2 - Requires Paid Billing)</option>
+                <option value="gemini-2.5-flash-image">gemini-2.5-flash-image (Nano Banana - Requires Paid Billing)</option>
+                <option value="gemini-3-pro-image">gemini-3-pro-image (Nano Banana Pro - Requires Paid Billing)</option>
               </select>
             </div>
 
