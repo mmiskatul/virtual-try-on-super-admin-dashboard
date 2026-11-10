@@ -1,0 +1,725 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import {
+  Mail,
+  Database,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Send,
+  RefreshCw,
+  Eye,
+  EyeOff,
+  Save,
+  ShieldCheck,
+  Server,
+  UploadCloud,
+} from 'lucide-react';
+import { superAdminApi } from '../../lib/api';
+
+interface InfrastructureState {
+  smtp: {
+    activeTransport: 'smtp' | 'resend' | 'dev-preview';
+    configured: boolean;
+    host: string;
+    port: number;
+    secure: boolean;
+    user: string;
+    hasPass: boolean;
+    maskedPass: string;
+    from: string;
+    resendConfigured: boolean;
+    maskedResendKey: string;
+  };
+  portals: {
+    marketplaceUrl: string;
+    brandDashboardUrl: string;
+    superAdminUrl: string;
+  };
+  database: {
+    provider: string;
+    connected: boolean;
+    prismaActive: boolean;
+    latencyMs: number | null;
+    dbHost: string;
+    hasDatabaseUrl: boolean;
+    maskedDatabaseUrl: string;
+    supabaseUrl: string;
+    hasAnonKey: boolean;
+    maskedAnonKey: string;
+    hasServiceRoleKey: boolean;
+    maskedServiceRoleKey: string;
+    tableCounts: Record<string, number> | null;
+    snapshotCounts: {
+      tenants: number;
+      users: number;
+      products: number;
+      orders: number;
+    };
+  };
+}
+
+const SMTP_PRESETS = [
+  { id: 'gmail', label: 'Gmail SMTP', host: 'smtp.gmail.com', port: 465, secure: true },
+  { id: 'brevo', label: 'Brevo (Sendinblue)', host: 'smtp-relay.brevo.com', port: 587, secure: false },
+  { id: 'resend', label: 'Resend SMTP', host: 'smtp.resend.com', port: 465, secure: true },
+  { id: 'mailgun', label: 'Mailgun SMTP', host: 'smtp.mailgun.org', port: 587, secure: false },
+];
+
+export function InfrastructureConfig() {
+  const [loading, setLoading] = useState(true);
+  const [info, setInfo] = useState<InfrastructureState | null>(null);
+
+  // SMTP form state
+  const [smtpHost, setSmtpHost] = useState('');
+  const [smtpPort, setSmtpPort] = useState(587);
+  const [smtpSecure, setSmtpSecure] = useState(false);
+  const [smtpUser, setSmtpUser] = useState('');
+  const [smtpPass, setSmtpPass] = useState('');
+  const [showSmtpPass, setShowSmtpPass] = useState(false);
+  const [emailFrom, setEmailFrom] = useState('V-TRY Studio <noreply@v-try.fashion>');
+  const [resendApiKey, setResendApiKey] = useState('');
+  const [testRecipient, setTestRecipient] = useState('');
+
+  // Portal links
+  const [marketplaceUrl, setMarketplaceUrl] = useState('http://localhost:3000');
+  const [brandDashboardUrl, setBrandDashboardUrl] = useState('http://localhost:3001');
+  const [superAdminUrl, setSuperAdminUrl] = useState('http://localhost:3002');
+
+  // Supabase / Database form state
+  const [supabaseUrl, setSupabaseUrl] = useState('');
+  const [supabaseAnonKey, setSupabaseAnonKey] = useState('');
+  const [supabaseServiceRoleKey, setSupabaseServiceRoleKey] = useState('');
+  const [databaseUrl, setDatabaseUrl] = useState('');
+  const [showDbUri, setShowDbUri] = useState(false);
+
+  // Action feedback states
+  const [savingSmtp, setSavingSmtp] = useState(false);
+  const [testingSmtp, setTestingSmtp] = useState(false);
+  const [sendingTestEmail, setSendingTestEmail] = useState(false);
+  const [smtpFeedback, setSmtpFeedback] = useState<{ success: boolean; message: string } | null>(null);
+
+  const [savingDb, setSavingDb] = useState(false);
+  const [testingDb, setTestingDb] = useState(false);
+  const [syncingDb, setSyncingDb] = useState(false);
+  const [dbFeedback, setDbFeedback] = useState<{ success: boolean; message: string } | null>(null);
+
+  const loadConfig = async () => {
+    setLoading(true);
+    try {
+      const data: InfrastructureState = await superAdminApi.getInfrastructureConfig();
+      setInfo(data);
+      setSmtpHost(data.smtp.host || '');
+      setSmtpPort(data.smtp.port || 587);
+      setSmtpSecure(Boolean(data.smtp.secure));
+      setSmtpUser(data.smtp.user || '');
+      setEmailFrom(data.smtp.from || 'V-TRY Studio <noreply@v-try.fashion>');
+      setMarketplaceUrl(data.portals.marketplaceUrl || 'http://localhost:3000');
+      setBrandDashboardUrl(data.portals.brandDashboardUrl || 'http://localhost:3001');
+      setSuperAdminUrl(data.portals.superAdminUrl || 'http://localhost:3002');
+      setSupabaseUrl(data.database.supabaseUrl || '');
+    } catch (err: any) {
+      setDbFeedback({
+        success: false,
+        message: err?.message || 'Sign in as Super Admin to view live backend infrastructure settings.',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadConfig();
+  }, []);
+
+  const applyPreset = (preset: (typeof SMTP_PRESETS)[number]) => {
+    setSmtpHost(preset.host);
+    setSmtpPort(preset.port);
+    setSmtpSecure(preset.secure);
+    setSmtpFeedback(null);
+  };
+
+  const handleSaveSmtp = async () => {
+    setSavingSmtp(true);
+    setSmtpFeedback(null);
+    try {
+      const res = await superAdminApi.saveSmtpConfig({
+        host: smtpHost,
+        port: Number(smtpPort),
+        secure: smtpSecure,
+        user: smtpUser,
+        ...(smtpPass ? { pass: smtpPass } : {}),
+        from: emailFrom,
+        ...(resendApiKey ? { resendApiKey } : {}),
+        marketplaceUrl,
+        brandDashboardUrl,
+        superAdminUrl,
+      });
+      setSmtpPass('');
+      setResendApiKey('');
+      setSmtpFeedback({ success: true, message: res.message });
+      await loadConfig();
+    } catch (err: any) {
+      setSmtpFeedback({ success: false, message: err?.message || 'Failed to save SMTP settings.' });
+    } finally {
+      setSavingSmtp(false);
+    }
+  };
+
+  const handleVerifySmtp = async () => {
+    setTestingSmtp(true);
+    setSmtpFeedback(null);
+    try {
+      const res = await superAdminApi.testSmtpConfig({
+        action: 'verify',
+        host: smtpHost,
+        port: Number(smtpPort),
+        secure: smtpSecure,
+        user: smtpUser,
+        ...(smtpPass ? { pass: smtpPass } : {}),
+        from: emailFrom,
+      });
+      setSmtpFeedback({ success: Boolean(res.success), message: res.message });
+    } catch (err: any) {
+      setSmtpFeedback({ success: false, message: err?.message || 'SMTP verification failed.' });
+    } finally {
+      setTestingSmtp(false);
+    }
+  };
+
+  const handleSendTestEmail = async () => {
+    if (!testRecipient.trim()) {
+      setSmtpFeedback({ success: false, message: 'Enter a recipient email address first.' });
+      return;
+    }
+    setSendingTestEmail(true);
+    setSmtpFeedback(null);
+    try {
+      const res = await superAdminApi.testSmtpConfig({
+        action: 'send',
+        testRecipient: testRecipient.trim(),
+        host: smtpHost,
+        port: Number(smtpPort),
+        secure: smtpSecure,
+        user: smtpUser,
+        ...(smtpPass ? { pass: smtpPass } : {}),
+        from: emailFrom,
+      });
+      setSmtpFeedback({ success: Boolean(res.success), message: res.message });
+    } catch (err: any) {
+      setSmtpFeedback({ success: false, message: err?.message || 'Failed to send test email.' });
+    } finally {
+      setSendingTestEmail(false);
+    }
+  };
+
+  const handleTestDatabase = async () => {
+    setTestingDb(true);
+    setDbFeedback(null);
+    try {
+      const res = await superAdminApi.testDatabaseConfig({
+        ...(databaseUrl.trim() ? { databaseUrl: databaseUrl.trim() } : {}),
+        ...(supabaseUrl.trim() ? { supabaseUrl: supabaseUrl.trim() } : {}),
+      });
+      setDbFeedback({ success: Boolean(res.success), message: res.message });
+    } catch (err: any) {
+      setDbFeedback({ success: false, message: err?.message || 'Database connection test failed.' });
+    } finally {
+      setTestingDb(false);
+    }
+  };
+
+  const handleSaveDatabase = async () => {
+    setSavingDb(true);
+    setDbFeedback(null);
+    try {
+      const res = await superAdminApi.saveDatabaseConfig({
+        ...(databaseUrl.trim() ? { databaseUrl: databaseUrl.trim() } : {}),
+        supabaseUrl: supabaseUrl.trim(),
+        ...(supabaseAnonKey.trim() ? { supabaseAnonKey: supabaseAnonKey.trim() } : {}),
+        ...(supabaseServiceRoleKey.trim() ? { supabaseServiceRoleKey: supabaseServiceRoleKey.trim() } : {}),
+      });
+      setDatabaseUrl('');
+      setSupabaseAnonKey('');
+      setSupabaseServiceRoleKey('');
+      setDbFeedback({ success: true, message: res.message });
+      await loadConfig();
+    } catch (err: any) {
+      setDbFeedback({ success: false, message: err?.message || 'Failed to save database configuration.' });
+    } finally {
+      setSavingDb(false);
+    }
+  };
+
+  const handleSyncDatabase = async () => {
+    setSyncingDb(true);
+    setDbFeedback(null);
+    try {
+      const res = await superAdminApi.syncDatabase();
+      setDbFeedback({ success: true, message: res.message });
+      await loadConfig();
+    } catch (err: any) {
+      setDbFeedback({ success: false, message: err?.message || 'Failed to sync snapshot data to Supabase.' });
+    } finally {
+      setSyncingDb(false);
+    }
+  };
+
+  if (loading && !info) {
+    return (
+      <div className="flex flex-col items-center justify-center p-16 space-y-4 text-slate-400">
+        <Loader2 className="w-8 h-8 animate-spin text-amber-400" />
+        <p className="text-sm font-semibold">Loading SMTP &amp; Supabase Infrastructure Configuration...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8 max-w-6xl">
+      {/* Top Status Banner */}
+      <div className="admin-card p-6 rounded-3xl bg-gradient-to-r from-slate-900 via-amber-950/20 to-slate-900 border border-amber-500/25 shadow-2xl">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="space-y-1">
+            <h2 className="text-xl font-extrabold text-white flex items-center gap-2.5">
+              <Server className="w-5 h-5 text-amber-400" />
+              SMTP Email Transport &amp; Supabase Database Control
+            </h2>
+            <p className="text-xs text-slate-400">
+              Configure real-time SMTP email verification/recovery delivery and connect Supabase PostgreSQL persistence without restarting the server.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`px-3 py-1 rounded-full text-[11px] font-bold border ${
+                info?.smtp.configured
+                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                  : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+              }`}
+            >
+              Mail: {info?.smtp.activeTransport?.toUpperCase() || 'DEV-PREVIEW'}
+            </span>
+            <span
+              className={`px-3 py-1 rounded-full text-[11px] font-bold border ${
+                info?.database.connected
+                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                  : 'bg-slate-800 text-slate-300 border-slate-700'
+              }`}
+            >
+              DB: {info?.database.provider || 'Snapshot'}
+            </span>
+            <button
+              type="button"
+              onClick={loadConfig}
+              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 flex items-center gap-1.5 border border-slate-700"
+            >
+              <RefreshCw className="w-3.5 h-3.5" /> Refresh
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* ==================== 1. SMTP EMAIL CONFIGURATION ==================== */}
+        <div className="admin-card p-6 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-5 shadow-xl">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400">
+                <Mail className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-white">SMTP Mail Server (Verification &amp; Password Reset)</h3>
+                <p className="text-[11px] text-slate-400">Used by all 3 portals for signup verification &amp; reset codes</p>
+              </div>
+            </div>
+            <span
+              className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                info?.smtp.host
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                  : 'bg-slate-800 text-slate-400 border-slate-700'
+              }`}
+            >
+              {info?.smtp.host ? 'SMTP Configured' : 'Not Configured'}
+            </span>
+          </div>
+
+          {/* Quick SMTP Presets */}
+          <div className="space-y-1.5">
+            <span className="text-[11px] font-semibold text-slate-400 block">Quick Provider Presets</span>
+            <div className="flex flex-wrap gap-2">
+              {SMTP_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => applyPreset(preset)}
+                  className="px-2.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-[11px] font-semibold text-slate-300 transition-colors"
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="sm:col-span-2 space-y-1">
+              <label className="block text-xs font-semibold text-slate-300">SMTP Host</label>
+              <input
+                type="text"
+                value={smtpHost}
+                onChange={(e) => setSmtpHost(e.target.value)}
+                placeholder="smtp.gmail.com"
+                className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-xs focus:outline-none focus:border-amber-500"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-slate-300">Port</label>
+              <input
+                type="number"
+                value={smtpPort}
+                onChange={(e) => {
+                  const p = Number(e.target.value);
+                  setSmtpPort(p);
+                  if (p === 465) setSmtpSecure(true);
+                  if (p === 587) setSmtpSecure(false);
+                }}
+                className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-xs focus:outline-none focus:border-amber-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-slate-300">SMTP Username</label>
+              <input
+                type="text"
+                value={smtpUser}
+                onChange={(e) => setSmtpUser(e.target.value)}
+                placeholder="you@gmail.com"
+                className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-xs focus:outline-none focus:border-amber-500"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-slate-300">SMTP Password / App Password</label>
+              <div className="relative">
+                <input
+                  type={showSmtpPass ? 'text' : 'password'}
+                  value={smtpPass}
+                  onChange={(e) => setSmtpPass(e.target.value)}
+                  placeholder={
+                    info?.smtp.hasPass
+                      ? `Saved (${info.smtp.maskedPass}) — enter to update`
+                      : 'Enter SMTP password / app key'
+                  }
+                  className="w-full pl-3 pr-9 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-xs focus:outline-none focus:border-amber-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowSmtpPass((v) => !v)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                >
+                  {showSmtpPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-slate-300">From Email Header</label>
+              <input
+                type="text"
+                value={emailFrom}
+                onChange={(e) => setEmailFrom(e.target.value)}
+                placeholder="V-TRY Studio <noreply@yourdomain.com>"
+                className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-500"
+              />
+            </div>
+
+            <label className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer">
+              <span className="text-xs font-semibold text-slate-300">Use SSL/TLS (Port 465)</span>
+              <input
+                type="checkbox"
+                checked={smtpSecure}
+                onChange={(e) => setSmtpSecure(e.target.checked)}
+                className="w-4 h-4 accent-amber-500 rounded"
+              />
+            </label>
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-slate-300">Resend API Key (Optional Backup)</label>
+            <input
+              type="password"
+              value={resendApiKey}
+              onChange={(e) => setResendApiKey(e.target.value)}
+              placeholder={
+                info?.smtp.resendConfigured
+                  ? `Saved (${info.smtp.maskedResendKey}) — enter to update`
+                  : 're_... (optional if using SMTP)'
+              }
+              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-xs focus:outline-none focus:border-amber-500"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <div className="space-y-1">
+              <label className="block text-[10px] font-semibold text-slate-400">Marketplace URL</label>
+              <input
+                type="text"
+                value={marketplaceUrl}
+                onChange={(e) => setMarketplaceUrl(e.target.value)}
+                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 font-mono text-[11px]"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-semibold text-slate-400">Brand Portal URL</label>
+              <input
+                type="text"
+                value={brandDashboardUrl}
+                onChange={(e) => setBrandDashboardUrl(e.target.value)}
+                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 font-mono text-[11px]"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-semibold text-slate-400">Admin URL</label>
+              <input
+                type="text"
+                value={superAdminUrl}
+                onChange={(e) => setSuperAdminUrl(e.target.value)}
+                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 font-mono text-[11px]"
+              />
+            </div>
+          </div>
+
+          {/* SMTP Actions */}
+          <div className="grid grid-cols-2 gap-2.5 pt-1">
+            <button
+              type="button"
+              onClick={handleVerifySmtp}
+              disabled={testingSmtp}
+              className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 border border-slate-700 disabled:opacity-50"
+            >
+              {testingSmtp ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />}
+              <span>Verify SMTP Handshake</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSaveSmtp}
+              disabled={savingSmtp}
+              className="py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-50"
+            >
+              {savingSmtp ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+              <span>Save SMTP Settings</span>
+            </button>
+          </div>
+
+          {/* Send Real Test Email Box */}
+          <div className="pt-3 border-t border-slate-800 flex gap-2">
+            <input
+              type="email"
+              value={testRecipient}
+              onChange={(e) => setTestRecipient(e.target.value)}
+              placeholder="Send test email to (e.g. you@example.com)"
+              className="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-500"
+            />
+            <button
+              type="button"
+              onClick={handleSendTestEmail}
+              disabled={sendingTestEmail}
+              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center gap-1.5 border border-slate-700 disabled:opacity-50"
+            >
+              {sendingTestEmail ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5 text-amber-400" />}
+              <span>Send Test</span>
+            </button>
+          </div>
+
+          {smtpFeedback && (
+            <div
+              className={`p-3 rounded-xl border text-xs flex items-start gap-2 ${
+                smtpFeedback.success
+                  ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
+                  : 'bg-rose-950/30 border-rose-500/40 text-rose-300'
+              }`}
+            >
+              {smtpFeedback.success ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400 mt-0.5" />
+              ) : (
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+              )}
+              <span>{smtpFeedback.message}</span>
+            </div>
+          )}
+        </div>
+
+        {/* ==================== 2. SUPABASE DATABASE CONFIGURATION ==================== */}
+        <div className="admin-card p-6 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-5 shadow-xl">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400">
+                <Database className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-white">Supabase PostgreSQL Database</h3>
+                <p className="text-[11px] text-slate-400">Authoritative persistence for users, tokens, tenants, &amp; orders</p>
+              </div>
+            </div>
+            <span
+              className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                info?.database.connected
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                  : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+              }`}
+            >
+              {info?.database.connected ? 'Connected' : 'Fallback Snapshot'}
+            </span>
+          </div>
+
+          {/* Live Table Metrics */}
+          <div className="grid grid-cols-4 gap-2 text-center">
+            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+              <span className="text-[10px] text-slate-400 block">Tenants</span>
+              <span className="text-sm font-extrabold text-white">
+                {info?.database.tableCounts?.tenants ?? info?.database.snapshotCounts.tenants ?? 0}
+              </span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+              <span className="text-[10px] text-slate-400 block">Users</span>
+              <span className="text-sm font-extrabold text-white">
+                {info?.database.tableCounts?.users ?? info?.database.snapshotCounts.users ?? 0}
+              </span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+              <span className="text-[10px] text-slate-400 block">Products</span>
+              <span className="text-sm font-extrabold text-white">
+                {info?.database.tableCounts?.products ?? info?.database.snapshotCounts.products ?? 0}
+              </span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+              <span className="text-[10px] text-slate-400 block">Latency</span>
+              <span className="text-sm font-extrabold text-emerald-400">
+                {info?.database.latencyMs !== null && info?.database.latencyMs !== undefined ? `${info.database.latencyMs}ms` : 'Local'}
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-slate-300">
+                Supabase PostgreSQL Connection URI (DATABASE_URL)
+              </label>
+              <div className="relative">
+                <input
+                  type={showDbUri ? 'text' : 'password'}
+                  value={databaseUrl}
+                  onChange={(e) => setDatabaseUrl(e.target.value)}
+                  placeholder={
+                    info?.database.maskedDatabaseUrl
+                      ? `Active (${info.database.maskedDatabaseUrl}) — paste to switch`
+                      : 'postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres'
+                  }
+                  className="w-full pl-3 pr-9 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowDbUri((v) => !v)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                >
+                  {showDbUri ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-500">
+                Supports Supabase Session/Transaction Pooler (`pooler.supabase.com:6543`) and Direct Connection (`db.*.supabase.co:5432`) with automatic SSL.
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-slate-300">Supabase Project URL (Optional)</label>
+              <input
+                type="url"
+                value={supabaseUrl}
+                onChange={(e) => setSupabaseUrl(e.target.value)}
+                placeholder="https://your-project-ref.supabase.co"
+                className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-slate-300">Supabase Anon Key (Optional)</label>
+                <input
+                  type="password"
+                  value={supabaseAnonKey}
+                  onChange={(e) => setSupabaseAnonKey(e.target.value)}
+                  placeholder={info?.database.hasAnonKey ? `Saved (${info.database.maskedAnonKey})` : 'eyJhbGci...'}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-slate-300">Service Role Key (Optional)</label>
+                <input
+                  type="password"
+                  value={supabaseServiceRoleKey}
+                  onChange={(e) => setSupabaseServiceRoleKey(e.target.value)}
+                  placeholder={info?.database.hasServiceRoleKey ? `Saved (${info.database.maskedServiceRoleKey})` : 'eyJhbGci...'}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              onClick={handleTestDatabase}
+              disabled={testingDb}
+              className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 border border-slate-700 disabled:opacity-50"
+            >
+              {testingDb ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5 text-emerald-400" />}
+              <span>Test Supabase Connection</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSaveDatabase}
+              disabled={savingDb}
+              className="py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-50"
+            >
+              {savingDb ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+              <span>Save &amp; Reconnect DB</span>
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSyncDatabase}
+            disabled={syncingDb || !info?.database.connected}
+            className="w-full py-2.5 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 border border-slate-800 disabled:opacity-50"
+          >
+            {syncingDb ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UploadCloud className="w-3.5 h-3.5 text-sky-400" />}
+            <span>Sync Local Seed / Snapshot Records to Supabase</span>
+          </button>
+
+          {dbFeedback && (
+            <div
+              className={`p-3 rounded-xl border text-xs flex items-start gap-2 ${
+                dbFeedback.success
+                  ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
+                  : 'bg-rose-950/30 border-rose-500/40 text-rose-300'
+              }`}
+            >
+              {dbFeedback.success ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400 mt-0.5" />
+              ) : (
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+              )}
+              <span>{dbFeedback.message}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

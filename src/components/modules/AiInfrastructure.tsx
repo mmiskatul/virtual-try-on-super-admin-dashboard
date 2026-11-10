@@ -26,18 +26,15 @@ interface EngineConfig {
     configured: boolean;
     model: string;
     maskedKey: string;
-    apiKey: string;
   };
   fal: {
     configured: boolean;
     maskedKey: string;
-    apiKey: string;
   };
   external: {
     configured: boolean;
     maskedKey: string;
     apiUrl: string;
-    apiKey: string;
   };
   fallbackEnabled: boolean;
   fallbackChain: string[];
@@ -61,6 +58,9 @@ export function AiInfrastructure() {
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showFalKey, setShowFalKey] = useState(false);
 
+  const [geminiMasked, setGeminiMasked] = useState('');
+  const [falMasked, setFalMasked] = useState('');
+
   // Key testing state
   const [testingGemini, setTestingGemini] = useState(false);
   const [geminiTestResult, setGeminiTestResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -82,10 +82,9 @@ export function AiInfrastructure() {
       const data: EngineConfig = await superAdminApi.getAiEngineConfig();
       if (data) {
         setActiveProvider(data.activeProvider || 'gemini');
-        if (data.gemini?.apiKey) setGeminiKey(data.gemini.apiKey);
+        if (data.gemini?.maskedKey) setGeminiMasked(data.gemini.maskedKey);
         if (data.gemini?.model) setGeminiModel(data.gemini.model);
-        if (data.fal?.apiKey) setFalKey(data.fal.apiKey);
-        if (data.external?.apiKey) setVtonApiKey(data.external.apiKey);
+        if (data.fal?.maskedKey) setFalMasked(data.fal.maskedKey);
         if (data.external?.apiUrl) setVtonApiUrl(data.external.apiUrl);
         setFallbackEnabled(data.fallbackEnabled !== false);
       }
@@ -381,7 +380,7 @@ export function AiInfrastructure() {
                   type={showGeminiKey ? 'text' : 'password'}
                   value={geminiKey}
                   onChange={(e) => setGeminiKey(e.target.value)}
-                  placeholder="Paste your Gemini API key (AQ... or AIza...)"
+                  placeholder={geminiMasked ? `Configured (${geminiMasked}) — paste to replace` : 'Paste your Gemini API key (AQ... or AIza...)'}
                   className="w-full pl-3.5 pr-20 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-xs focus:outline-none focus:border-purple-500 transition-colors"
                 />
                 <button
@@ -487,7 +486,7 @@ export function AiInfrastructure() {
                   type={showFalKey ? 'text' : 'password'}
                   value={falKey}
                   onChange={(e) => setFalKey(e.target.value)}
-                  placeholder="Paste your Fal AI Key (key_id:key_secret)"
+                  placeholder={falMasked ? `Configured (${falMasked}) — paste to replace` : 'Paste your Fal AI Key (key_id:key_secret)'}
                   className="w-full pl-3.5 pr-20 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-xs focus:outline-none focus:border-sky-500 transition-colors"
                 />
                 <button

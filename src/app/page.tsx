@@ -8,6 +8,7 @@ import { ToastNotification } from '../components/ui/ToastNotification';
 import { PlatformOverview } from '../components/modules/PlatformOverview';
 import { TenantGovernance } from '../components/modules/TenantGovernance';
 import { AiInfrastructure } from '../components/modules/AiInfrastructure';
+import { InfrastructureConfig } from '../components/modules/InfrastructureConfig';
 import { SubscriptionQuotas } from '../components/modules/SubscriptionQuotas';
 import { AuditTrail } from '../components/modules/AuditTrail';
 import { TenantOnboardingModal } from '../components/ui/TenantOnboardingModal';
@@ -155,6 +156,8 @@ export default function SuperAdminDashboardPage() {
         )}
 
         {activeTab === 'ai' && <AiInfrastructure />}
+
+        {activeTab === 'infrastructure' && <InfrastructureConfig />}
 
         {activeTab === 'subscriptions' && <SubscriptionQuotas />}
 

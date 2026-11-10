@@ -29,6 +29,7 @@ export function AdminHeader({ activeTab, onRefresh }: AdminHeaderProps) {
           {activeTab === 'overview' && 'Platform Governance Overview'}
           {activeTab === 'tenants' && 'Brand Tenant Directory & Access Control'}
           {activeTab === 'ai' && 'AI Virtual Try-On Infrastructure'}
+          {activeTab === 'infrastructure' && 'SMTP Email & Supabase Database'}
           {activeTab === 'subscriptions' && 'Tenant Subscription Quotas'}
           {activeTab === 'audit' && 'Security & Administration Audit Trail'}
         </h1>

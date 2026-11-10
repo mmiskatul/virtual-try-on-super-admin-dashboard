@@ -7,7 +7,8 @@ import {
   Users,
   Sparkles,
   Layers,
-  Clock
+  Clock,
+  Database
 } from 'lucide-react';
 import { AdminTab } from '../../types';
 
@@ -65,6 +66,16 @@ export function AdminSidebar({ activeTab, onSelectTab, tenantCount }: AdminSideb
             }`}
           >
             <Sparkles className="w-4 h-4" /> AI Engine & Hardware
+          </button>
+          <button
+            onClick={() => onSelectTab('infrastructure')}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
+              activeTab === 'infrastructure'
+                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+            }`}
+          >
+            <Database className="w-4 h-4" /> SMTP & Supabase DB
           </button>
           <button
             onClick={() => onSelectTab('subscriptions')}

@@ -122,15 +122,18 @@ export async function middleware(request: NextRequest) {
     }
 
     if (request.method === 'OPTIONS') {
+      const preflightHeaders: Record<string, string> = {
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-tenant-id, x-client-version',
+        'Access-Control-Max-Age': '86400',
+      };
+      if (origin && isOriginAllowed(origin)) {
+        preflightHeaders['Access-Control-Allow-Origin'] = origin;
+        preflightHeaders['Access-Control-Allow-Credentials'] = 'true';
+      }
       return new NextResponse(null, {
         status: 204,
-        headers: {
-          'Access-Control-Allow-Origin': origin || '*',
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-tenant-id, x-client-version',
-          'Access-Control-Allow-Credentials': 'true',
-          'Access-Control-Max-Age': '86400',
-        },
+        headers: preflightHeaders,
       });
     }
   }

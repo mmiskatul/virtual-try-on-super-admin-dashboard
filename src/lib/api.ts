@@ -158,5 +158,70 @@ export const superAdminApi = {
       method: 'POST',
       body: JSON.stringify(testPayload)
     });
+  },
+
+  // SMTP & Supabase Database Infrastructure
+  getInfrastructureConfig: () => {
+    return request<any>(`${SUPER_ADMIN_API_URL}/api/v1/admin/infrastructure/config`);
+  },
+
+  saveSmtpConfig: (payload: {
+    host?: string;
+    port?: number;
+    secure?: boolean;
+    user?: string;
+    pass?: string;
+    from?: string;
+    resendApiKey?: string;
+    marketplaceUrl?: string;
+    brandDashboardUrl?: string;
+    superAdminUrl?: string;
+  }) => {
+    return request<any>(`${SUPER_ADMIN_API_URL}/api/v1/admin/infrastructure/smtp`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  testSmtpConfig: (payload: {
+    action: 'verify' | 'send';
+    testRecipient?: string;
+    host?: string;
+    port?: number;
+    secure?: boolean;
+    user?: string;
+    pass?: string;
+    from?: string;
+  }) => {
+    return request<any>(`${SUPER_ADMIN_API_URL}/api/v1/admin/infrastructure/smtp/test`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  testDatabaseConfig: (payload: { databaseUrl?: string; supabaseUrl?: string }) => {
+    return request<any>(`${SUPER_ADMIN_API_URL}/api/v1/admin/infrastructure/database/test`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  saveDatabaseConfig: (payload: {
+    databaseUrl?: string;
+    supabaseUrl?: string;
+    supabaseAnonKey?: string;
+    supabaseServiceRoleKey?: string;
+  }) => {
+    return request<any>(`${SUPER_ADMIN_API_URL}/api/v1/admin/infrastructure/database`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  syncDatabase: () => {
+    return request<any>(`${SUPER_ADMIN_API_URL}/api/v1/admin/infrastructure/database/sync`, {
+      method: 'POST',
+      body: JSON.stringify({})
+    });
   }
 };

@@ -23,4 +23,4 @@ export interface AuditLog {
   timestamp: string;
 }
 
-export type AdminTab = 'overview' | 'tenants' | 'ai' | 'subscriptions' | 'audit';
+export type AdminTab = 'overview' | 'tenants' | 'ai' | 'infrastructure' | 'subscriptions' | 'audit';
