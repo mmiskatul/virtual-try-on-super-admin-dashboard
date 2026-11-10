@@ -32,3 +32,27 @@ export const quotaAdjustmentSchema = z.object({
 });
 
 export type QuotaAdjustmentFormValues = z.infer<typeof quotaAdjustmentSchema>;
+
+export const adminLoginSchema = z.object({
+  email: z.string().email('Please enter a valid administrator email address'),
+  password: z.string().min(6, 'Security password must be at least 6 characters'),
+});
+
+export type AdminLoginFormValues = z.infer<typeof adminLoginSchema>;
+
+export const verifyEmailSchema = z.object({
+  email: z.string().email('Please enter your administrator email address'),
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, 'Verification code must be exactly 6 digits'),
+});
+
+export type VerifyEmailFormValues = z.infer<typeof verifyEmailSchema>;
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email('Please enter a valid administrator email address'),
+});
+
+export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
+

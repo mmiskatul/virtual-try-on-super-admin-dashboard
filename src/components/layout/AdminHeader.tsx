@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import Link from 'next/link';
 import Image from 'next/image';
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { RefreshCw, ShieldCheck, LogOut, User } from 'lucide-react';
 import { AdminTab } from '../../types';
 
@@ -13,6 +14,13 @@ interface AdminHeaderProps {
 
 export function AdminHeader({ activeTab, onRefresh }: AdminHeaderProps) {
   const { data: session } = useSession();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (session?.backendToken) {
+      localStorage.setItem('admin_token', session.backendToken);
+    }
+  }, [session?.backendToken]);
 
   return (
     <div className="flex items-center justify-between">
@@ -48,7 +56,10 @@ export function AdminHeader({ activeTab, onRefresh }: AdminHeaderProps) {
               {(session.user as any).role || 'SUPER_ADMIN'}
             </span>
             <button
-              onClick={() => signOut()}
+              onClick={() => {
+                if (typeof window !== 'undefined') localStorage.removeItem('admin_token');
+                signOut({ callbackUrl: '/login' });
+              }}
               title="Sign Out"
               className="ml-1 text-slate-400 hover:text-rose-400 transition-colors"
             >
@@ -56,13 +67,13 @@ export function AdminHeader({ activeTab, onRefresh }: AdminHeaderProps) {
             </button>
           </div>
         ) : (
-          <button
-            onClick={() => signIn('credentials', { email: 'admin@vton-platform.io' })}
+          <Link
+            href="/login"
             className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-colors flex items-center gap-1.5"
           >
             <User className="w-3.5 h-3.5" />
             <span>Admin Sign In</span>
-          </button>
+          </Link>
         )}
 
         <button

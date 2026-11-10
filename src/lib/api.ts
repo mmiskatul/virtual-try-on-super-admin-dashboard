@@ -6,6 +6,12 @@
 const SUPER_ADMIN_API_URL = process.env.NEXT_PUBLIC_SUPER_ADMIN_API_URL || 'http://localhost:4000';
 const AI_SERVICE_URL = process.env.NEXT_PUBLIC_AI_SERVICE_URL || 'http://localhost:8000';
 
+export interface DevEmailPreview {
+  actionUrl?: string;
+  otpCode?: string;
+  expiresInMinutes?: number;
+}
+
 export class ApiError extends Error {
   constructor(public status: number, message: string, public data?: any) {
     super(message);
@@ -46,11 +52,56 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const superAdminApi = {
-  // Authentication
+  // Authentication & Recovery
   login: (credentials: { email: string; password: string }) => {
     return request<{ token: string; admin: any }>(`${SUPER_ADMIN_API_URL}/api/v1/admin/auth/login`, {
       method: 'POST',
       body: JSON.stringify(credentials)
+    });
+  },
+
+  verifyEmail: (payload: { token?: string; email?: string; code?: string }) => {
+    return request<{ message: string; user: any }>(`${SUPER_ADMIN_API_URL}/api/v1/admin/auth/verify-email`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  resendVerification: (email: string) => {
+    return request<{
+      message: string;
+      alreadyVerified?: boolean;
+      devPreview?: DevEmailPreview;
+    }>(`${SUPER_ADMIN_API_URL}/api/v1/admin/auth/resend-verification`, {
+      method: 'POST',
+      body: JSON.stringify({ email, portal: 'admin' })
+    });
+  },
+
+  forgotPassword: (email: string) => {
+    return request<{ message: string; devPreview?: DevEmailPreview }>(
+      `${SUPER_ADMIN_API_URL}/api/v1/admin/auth/forgot-password`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ email, portal: 'admin' })
+      }
+    );
+  },
+
+  verifyResetToken: (payload: { token?: string; email?: string; code?: string }) => {
+    return request<{ valid: boolean; email: string; expiresAt: number }>(
+      `${SUPER_ADMIN_API_URL}/api/v1/admin/auth/verify-reset-token`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      }
+    );
+  },
+
+  resetPassword: (payload: { token?: string; email?: string; code?: string; newPassword: string }) => {
+    return request<{ message: string }>(`${SUPER_ADMIN_API_URL}/api/v1/admin/auth/reset-password`, {
+      method: 'POST',
+      body: JSON.stringify({ ...payload, portal: 'admin' })
     });
   },
 
