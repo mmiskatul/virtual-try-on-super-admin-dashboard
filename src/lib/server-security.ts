@@ -89,7 +89,6 @@ const PLATFORM_SECRETS_TO_PROTECT: Array<[string | undefined, string]> = [
   [process.env.SUPER_ADMIN_SECURITY_KEY, 'SUPER_ADMIN_SECURITY_KEY'],
   [process.env.GPU_CLUSTER_TOKEN, 'GPU_CLUSTER_TOKEN'],
   [process.env.DATABASE_URL, 'DATABASE_URL'],
-  [process.env.INTERNAL_SERVICE_KEY, 'INTERNAL_SERVICE_KEY'],
 ];
 
 for (const [secret, name] of PLATFORM_SECRETS_TO_PROTECT) {

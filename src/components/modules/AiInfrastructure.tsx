@@ -31,11 +31,6 @@ interface EngineConfig {
     configured: boolean;
     maskedKey: string;
   };
-  external: {
-    configured: boolean;
-    maskedKey: string;
-    apiUrl: string;
-  };
   fallbackEnabled: boolean;
   fallbackChain: string[];
 }
@@ -50,8 +45,6 @@ export function AiInfrastructure() {
   const [geminiKey, setGeminiKey] = useState('');
   const [geminiModel, setGeminiModel] = useState('gemini-flash-latest');
   const [falKey, setFalKey] = useState('');
-  const [vtonApiKey, setVtonApiKey] = useState('');
-  const [vtonApiUrl, setVtonApiUrl] = useState('');
   const [fallbackEnabled, setFallbackEnabled] = useState(true);
 
   // Key visibility toggles
@@ -85,7 +78,6 @@ export function AiInfrastructure() {
         if (data.gemini?.maskedKey) setGeminiMasked(data.gemini.maskedKey);
         if (data.gemini?.model) setGeminiModel(data.gemini.model);
         if (data.fal?.maskedKey) setFalMasked(data.fal.maskedKey);
-        if (data.external?.apiUrl) setVtonApiUrl(data.external.apiUrl);
         setFallbackEnabled(data.fallbackEnabled !== false);
       }
     } catch {
@@ -111,8 +103,6 @@ export function AiInfrastructure() {
         geminiApiKey: geminiKey,
         geminiModel,
         falKey,
-        vtonApiKey,
-        vtonApiUrl,
         fallbackEnabled
       });
       setSaveSuccess(true);
@@ -236,7 +226,7 @@ export function AiInfrastructure() {
           <span className="text-xs text-slate-400">Select which engine executes first when a user requests a virtual try-on.</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Option 1: Gemini Multimodal Vision (Recommended) */}
           <div
             onClick={() => setActiveProvider('gemini')}
@@ -318,34 +308,6 @@ export function AiInfrastructure() {
             </div>
             <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400 pt-2 border-t border-slate-800">
               <CheckCircle2 className="w-3.5 h-3.5" /> 100% Offline Capable
-            </div>
-          </div>
-
-          {/* Option 4: Custom / External Cloud API */}
-          <div
-            onClick={() => setActiveProvider('external')}
-            className={`p-5 rounded-2xl border cursor-pointer transition-all relative space-y-3 ${
-              activeProvider === 'external'
-                ? 'bg-purple-950/40 border-purple-500 shadow-xl shadow-purple-900/20 ring-2 ring-purple-500/40'
-                : 'bg-slate-900/70 border-slate-800 hover:border-slate-700 hover:bg-slate-900'
-            }`}
-          >
-            <div className="flex justify-between items-start">
-              <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400">
-                <Activity className="w-5 h-5" />
-              </div>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
-                CUSTOM API
-              </span>
-            </div>
-            <div>
-              <p className="font-bold text-sm text-white">Custom / External Cloud</p>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Route try-on requests to Fashn.ai, Replicate IDM-VTON, or your private cloud inference cluster.
-              </p>
-            </div>
-            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 pt-2 border-t border-slate-800">
-              HTTP Webhook / JSON
             </div>
           </div>
         </div>
@@ -500,19 +462,6 @@ export function AiInfrastructure() {
               <p className="text-[10px] text-slate-500 mt-1">
                 Format: <code className="text-slate-400">key_id:key_secret</code> from fal.ai dashboard.
               </p>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                External / Custom VTON Endpoint (Optional Fallback)
-              </label>
-              <input
-                type="text"
-                value={vtonApiUrl}
-                onChange={(e) => setVtonApiUrl(e.target.value)}
-                placeholder="https://api.fashn.ai/v1/run or https://api.replicate.com/..."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-xs focus:outline-none focus:border-sky-500 transition-colors"
-              />
             </div>
 
             <div className="pt-2">

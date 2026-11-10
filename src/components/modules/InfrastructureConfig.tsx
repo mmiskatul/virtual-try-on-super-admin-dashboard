@@ -20,7 +20,7 @@ import { superAdminApi } from '../../lib/api';
 
 interface InfrastructureState {
   smtp: {
-    activeTransport: 'smtp' | 'resend' | 'dev-preview';
+    activeTransport: 'smtp' | 'dev-preview';
     configured: boolean;
     host: string;
     port: number;
@@ -29,13 +29,6 @@ interface InfrastructureState {
     hasPass: boolean;
     maskedPass: string;
     from: string;
-    resendConfigured: boolean;
-    maskedResendKey: string;
-  };
-  portals: {
-    marketplaceUrl: string;
-    brandDashboardUrl: string;
-    superAdminUrl: string;
   };
   database: {
     provider: string;
@@ -45,11 +38,6 @@ interface InfrastructureState {
     dbHost: string;
     hasDatabaseUrl: boolean;
     maskedDatabaseUrl: string;
-    supabaseUrl: string;
-    hasAnonKey: boolean;
-    maskedAnonKey: string;
-    hasServiceRoleKey: boolean;
-    maskedServiceRoleKey: string;
     tableCounts: Record<string, number> | null;
     snapshotCounts: {
       tenants: number;
@@ -79,18 +67,9 @@ export function InfrastructureConfig() {
   const [smtpPass, setSmtpPass] = useState('');
   const [showSmtpPass, setShowSmtpPass] = useState(false);
   const [emailFrom, setEmailFrom] = useState('V-TRY Studio <noreply@v-try.fashion>');
-  const [resendApiKey, setResendApiKey] = useState('');
   const [testRecipient, setTestRecipient] = useState('');
 
-  // Portal links
-  const [marketplaceUrl, setMarketplaceUrl] = useState('http://localhost:3000');
-  const [brandDashboardUrl, setBrandDashboardUrl] = useState('http://localhost:3001');
-  const [superAdminUrl, setSuperAdminUrl] = useState('http://localhost:3002');
-
   // Supabase / Database form state
-  const [supabaseUrl, setSupabaseUrl] = useState('');
-  const [supabaseAnonKey, setSupabaseAnonKey] = useState('');
-  const [supabaseServiceRoleKey, setSupabaseServiceRoleKey] = useState('');
   const [databaseUrl, setDatabaseUrl] = useState('');
   const [showDbUri, setShowDbUri] = useState(false);
 
@@ -115,10 +94,6 @@ export function InfrastructureConfig() {
       setSmtpSecure(Boolean(data.smtp.secure));
       setSmtpUser(data.smtp.user || '');
       setEmailFrom(data.smtp.from || 'V-TRY Studio <noreply@v-try.fashion>');
-      setMarketplaceUrl(data.portals.marketplaceUrl || 'http://localhost:3000');
-      setBrandDashboardUrl(data.portals.brandDashboardUrl || 'http://localhost:3001');
-      setSuperAdminUrl(data.portals.superAdminUrl || 'http://localhost:3002');
-      setSupabaseUrl(data.database.supabaseUrl || '');
     } catch (err: any) {
       setDbFeedback({
         success: false,
@@ -151,13 +126,8 @@ export function InfrastructureConfig() {
         user: smtpUser,
         ...(smtpPass ? { pass: smtpPass } : {}),
         from: emailFrom,
-        ...(resendApiKey ? { resendApiKey } : {}),
-        marketplaceUrl,
-        brandDashboardUrl,
-        superAdminUrl,
       });
       setSmtpPass('');
-      setResendApiKey('');
       setSmtpFeedback({ success: true, message: res.message });
       await loadConfig();
     } catch (err: any) {
@@ -220,7 +190,6 @@ export function InfrastructureConfig() {
     try {
       const res = await superAdminApi.testDatabaseConfig({
         ...(databaseUrl.trim() ? { databaseUrl: databaseUrl.trim() } : {}),
-        ...(supabaseUrl.trim() ? { supabaseUrl: supabaseUrl.trim() } : {}),
       });
       setDbFeedback({ success: Boolean(res.success), message: res.message });
     } catch (err: any) {
@@ -236,13 +205,8 @@ export function InfrastructureConfig() {
     try {
       const res = await superAdminApi.saveDatabaseConfig({
         ...(databaseUrl.trim() ? { databaseUrl: databaseUrl.trim() } : {}),
-        supabaseUrl: supabaseUrl.trim(),
-        ...(supabaseAnonKey.trim() ? { supabaseAnonKey: supabaseAnonKey.trim() } : {}),
-        ...(supabaseServiceRoleKey.trim() ? { supabaseServiceRoleKey: supabaseServiceRoleKey.trim() } : {}),
       });
       setDatabaseUrl('');
-      setSupabaseAnonKey('');
-      setSupabaseServiceRoleKey('');
       setDbFeedback({ success: true, message: res.message });
       await loadConfig();
     } catch (err: any) {
@@ -448,51 +412,6 @@ export function InfrastructureConfig() {
             </label>
           </div>
 
-          <div className="space-y-1">
-            <label className="block text-xs font-semibold text-slate-300">Resend API Key (Optional Backup)</label>
-            <input
-              type="password"
-              value={resendApiKey}
-              onChange={(e) => setResendApiKey(e.target.value)}
-              placeholder={
-                info?.smtp.resendConfigured
-                  ? `Saved (${info.smtp.maskedResendKey}) — enter to update`
-                  : 're_... (optional if using SMTP)'
-              }
-              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-xs focus:outline-none focus:border-amber-500"
-            />
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <div className="space-y-1">
-              <label className="block text-[10px] font-semibold text-slate-400">Marketplace URL</label>
-              <input
-                type="text"
-                value={marketplaceUrl}
-                onChange={(e) => setMarketplaceUrl(e.target.value)}
-                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 font-mono text-[11px]"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="block text-[10px] font-semibold text-slate-400">Brand Portal URL</label>
-              <input
-                type="text"
-                value={brandDashboardUrl}
-                onChange={(e) => setBrandDashboardUrl(e.target.value)}
-                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 font-mono text-[11px]"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="block text-[10px] font-semibold text-slate-400">Admin URL</label>
-              <input
-                type="text"
-                value={superAdminUrl}
-                onChange={(e) => setSuperAdminUrl(e.target.value)}
-                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 font-mono text-[11px]"
-              />
-            </div>
-          </div>
-
           {/* SMTP Actions */}
           <div className="grid grid-cols-2 gap-2.5 pt-1">
             <button
@@ -634,40 +553,6 @@ export function InfrastructureConfig() {
                 Supports Supabase Session/Transaction Pooler (`pooler.supabase.com:6543`) and Direct Connection (`db.*.supabase.co:5432`) with automatic SSL.
               </p>
             </div>
-
-            <div className="space-y-1">
-              <label className="block text-xs font-semibold text-slate-300">Supabase Project URL (Optional)</label>
-              <input
-                type="url"
-                value={supabaseUrl}
-                onChange={(e) => setSupabaseUrl(e.target.value)}
-                placeholder="https://your-project-ref.supabase.co"
-                className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="block text-xs font-semibold text-slate-300">Supabase Anon Key (Optional)</label>
-                <input
-                  type="password"
-                  value={supabaseAnonKey}
-                  onChange={(e) => setSupabaseAnonKey(e.target.value)}
-                  placeholder={info?.database.hasAnonKey ? `Saved (${info.database.maskedAnonKey})` : 'eyJhbGci...'}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="block text-xs font-semibold text-slate-300">Service Role Key (Optional)</label>
-                <input
-                  type="password"
-                  value={supabaseServiceRoleKey}
-                  onChange={(e) => setSupabaseServiceRoleKey(e.target.value)}
-                  placeholder={info?.database.hasServiceRoleKey ? `Saved (${info.database.maskedServiceRoleKey})` : 'eyJhbGci...'}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2.5">
@@ -723,3 +608,4 @@ export function InfrastructureConfig() {
     </div>
   );
 }
+

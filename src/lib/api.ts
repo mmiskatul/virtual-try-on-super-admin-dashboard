@@ -172,10 +172,6 @@ export const superAdminApi = {
     user?: string;
     pass?: string;
     from?: string;
-    resendApiKey?: string;
-    marketplaceUrl?: string;
-    brandDashboardUrl?: string;
-    superAdminUrl?: string;
   }) => {
     return request<any>(`${SUPER_ADMIN_API_URL}/api/v1/admin/infrastructure/smtp`, {
       method: 'POST',
@@ -199,7 +195,7 @@ export const superAdminApi = {
     });
   },
 
-  testDatabaseConfig: (payload: { databaseUrl?: string; supabaseUrl?: string }) => {
+  testDatabaseConfig: (payload: { databaseUrl?: string }) => {
     return request<any>(`${SUPER_ADMIN_API_URL}/api/v1/admin/infrastructure/database/test`, {
       method: 'POST',
       body: JSON.stringify(payload)
@@ -208,9 +204,6 @@ export const superAdminApi = {
 
   saveDatabaseConfig: (payload: {
     databaseUrl?: string;
-    supabaseUrl?: string;
-    supabaseAnonKey?: string;
-    supabaseServiceRoleKey?: string;
   }) => {
     return request<any>(`${SUPER_ADMIN_API_URL}/api/v1/admin/infrastructure/database`, {
       method: 'POST',
