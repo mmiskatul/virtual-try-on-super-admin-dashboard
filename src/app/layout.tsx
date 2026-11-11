@@ -18,15 +18,19 @@ const jetbrainsMono = JetBrains_Mono({
   variable: '--font-mono',
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || 'https://admin.v-try.fashion';
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  process.env.NEXTAUTH_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3002');
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Super Admin Governance | AI Virtual Try-On SaaS',
-    template: '%s | V-TRY Platform Admin',
+    default: 'Super Admin Control Plane | AI Virtual Try-On SaaS',
+    template: '%s | V-TRY Control Plane',
   },
-  description: 'Platform control center for multi-tenant virtual try-on infrastructure, quotas, and AI engine telemetry.',
+  description:
+    'Enterprise platform control center for multi-tenant virtual try-on SaaS governance, billing, AI infrastructure, moderation, and security.',
   robots: {
     index: false,
     follow: false,
@@ -47,18 +51,16 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${plusJakartaSans.variable} ${jetbrainsMono.variable}`}
+      className={`${plusJakartaSans.variable} ${jetbrainsMono.variable}`}
     >
       <head>
-        {/* Dynamic Cryptographic Nonce for Strict CSP Verification */}
         {nonce && <meta name="csp-nonce" content={nonce} />}
       </head>
       <body
-        className="min-h-screen bg-white text-gray-900 font-sans antialiased"
+        className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased"
         data-csp-protected={nonce ? 'true' : undefined}
       >
         <QueryProvider>
-          {/* Live Real User Monitoring (RUM) for Core Web Vitals */}
           <WebVitalReporter serviceName="vton-super-admin" />
           {children}
         </QueryProvider>
