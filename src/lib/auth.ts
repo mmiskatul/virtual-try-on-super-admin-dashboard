@@ -84,5 +84,5 @@ export const authOptions: NextAuthOptions = {
       return session;
     }
   },
-  secret: process.env.NEXTAUTH_SECRET || 'vton-super-admin-fallback-secret-key-32chars'
+  secret: process.env.NEXTAUTH_SECRET
 };

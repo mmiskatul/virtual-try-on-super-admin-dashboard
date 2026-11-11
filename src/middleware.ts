@@ -208,7 +208,7 @@ export async function middleware(request: NextRequest) {
   // 2. Edge JWT Token Verification
   const token = await getToken({
     req: request,
-    secret: process.env.NEXTAUTH_SECRET || 'vton-super-admin-fallback-secret-key-32chars',
+    secret: process.env.NEXTAUTH_SECRET,
   });
 
   // 3. Immediate Edge Blocking if unauthenticated or non-admin

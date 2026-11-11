@@ -27,14 +27,15 @@ export interface PublicAdminDTO {
  * Protects root signing keys, vault nonces, and 2FA secrets from being transmitted to client JS.
  */
 export async function getTaintedAdminRecord(adminId: string = 'adm_master_01'): Promise<RawAdminRecord> {
+  const runtimeSuffix = crypto.randomUUID().replace(/-/g, '');
   const rawAdmin: RawAdminRecord = {
     id: adminId,
     name: 'Alexander Vance',
     email: 'admin@vton-platform.io',
     role: 'SUPER_ADMIN',
-    rootSigningKey: 'rsa_priv_live_99f8e7d6c5b4a3_superadmin_root',
-    twoFactorSecret: 'MZXW6YTBOI======',
-    vaultEncryptionNonce: '01a9b8c7d6e5f4a3b2c1d0',
+    rootSigningKey: process.env.SUPER_ADMIN_SECURITY_KEY || `ephemeral_root_${runtimeSuffix}`,
+    twoFactorSecret: `EPHEMERAL_2FA_${runtimeSuffix}`,
+    vaultEncryptionNonce: `ephemeral_nonce_${runtimeSuffix}`,
     internalAuditLevel: 'LEVEL_5_GOVERNANCE',
   };
 
