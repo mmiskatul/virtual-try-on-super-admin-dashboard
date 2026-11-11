@@ -5,12 +5,6 @@
 
 const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:4000';
 
-export interface DevEmailPreview {
-  actionUrl?: string;
-  otpCode?: string;
-  expiresInMinutes?: number;
-}
-
 export class ApiError extends Error {
   constructor(public status: number, message: string, public data?: any) {
     super(message);
@@ -70,7 +64,6 @@ export const superAdminApi = {
     return request<{
       message: string;
       alreadyVerified?: boolean;
-      devPreview?: DevEmailPreview;
     }>(`${BACKEND_API_URL}/api/v1/admin/auth/resend-verification`, {
       method: 'POST',
       body: JSON.stringify({ email, portal: 'admin' })
@@ -78,7 +71,7 @@ export const superAdminApi = {
   },
 
   forgotPassword: (email: string) => {
-    return request<{ message: string; devPreview?: DevEmailPreview }>(
+    return request<{ message: string }>(
       `${BACKEND_API_URL}/api/v1/admin/auth/forgot-password`,
       {
         method: 'POST',

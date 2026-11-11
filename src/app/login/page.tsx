@@ -8,10 +8,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, CheckCircle2, Loader2, MailCheck, ShieldCheck, ArrowRight } from 'lucide-react';
 import { adminLoginSchema, AdminLoginFormValues } from '../../lib/schemas';
-import { superAdminApi, DevEmailPreview } from '../../lib/api';
+import { superAdminApi } from '../../lib/api';
 import { AuthShell } from '../../components/auth/AuthShell';
 import { PasswordField } from '../../components/auth/PasswordField';
-import { DevEmailPreviewCard } from '../../components/auth/DevEmailPreviewCard';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
 
@@ -36,7 +35,6 @@ function AdminLoginContent() {
   const [needsVerificationEmail, setNeedsVerificationEmail] = useState<string | null>(null);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
   const [resendLoading, setResendLoading] = useState(false);
-  const [devPreview, setDevPreview] = useState<DevEmailPreview | null>(null);
 
   const {
     register,
@@ -52,7 +50,6 @@ function AdminLoginContent() {
     setErrorMsg(null);
     setNeedsVerificationEmail(null);
     setResendMessage(null);
-    setDevPreview(null);
 
     const result = await signIn('credentials', {
       redirect: false,
@@ -93,7 +90,6 @@ function AdminLoginContent() {
     try {
       const res = await superAdminApi.resendVerification(email);
       setResendMessage(res.message);
-      if (res.devPreview) setDevPreview(res.devPreview);
     } catch (err: any) {
       setErrorMsg(err?.message || 'Could not resend verification email.');
     } finally {
@@ -191,8 +187,6 @@ function AdminLoginContent() {
             {resendMessage}
           </div>
         )}
-
-        <DevEmailPreviewCard preview={devPreview} actionLabel="Verify Admin Email" />
 
         <div className="space-y-1">
           <label className="block text-xs font-medium text-gray-700">Administrator Email</label>
