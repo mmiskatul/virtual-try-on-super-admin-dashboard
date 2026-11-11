@@ -320,7 +320,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           )}
           <button
             type="button"
-            onClick={() => signOut({ callbackUrl: '/login' })}
+            onClick={async () => {
+              const { logoutAdmin } = await import('../../lib/logout');
+              await logoutAdmin({ callbackUrl: '/login' });
+            }}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 font-semibold border border-slate-800"
           >
             <LogOut className="w-3.5 h-3.5" />

@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { RefreshCw, ShieldCheck, LogOut, User } from 'lucide-react';
+import { logoutAdmin } from '../../lib/logout';
 import { AdminTab } from '../../types';
 
 interface AdminHeaderProps {
@@ -14,13 +15,6 @@ interface AdminHeaderProps {
 
 export function AdminHeader({ activeTab, onRefresh }: AdminHeaderProps) {
   const { data: session } = useSession();
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (session?.backendToken) {
-      localStorage.setItem('admin_token', session.backendToken);
-    }
-  }, [session?.backendToken]);
 
   return (
     <div className="flex items-center justify-between">
@@ -57,10 +51,7 @@ export function AdminHeader({ activeTab, onRefresh }: AdminHeaderProps) {
               {(session.user as any).role || 'SUPER_ADMIN'}
             </span>
             <button
-              onClick={() => {
-                if (typeof window !== 'undefined') localStorage.removeItem('admin_token');
-                signOut({ callbackUrl: '/login' });
-              }}
+              onClick={() => logoutAdmin({ callbackUrl: '/login' })}
               title="Sign Out"
               className="ml-1 text-gray-500 hover:text-rose-600 transition-colors"
             >

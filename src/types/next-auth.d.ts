@@ -3,7 +3,6 @@ import 'next-auth/jwt';
 
 declare module 'next-auth' {
   interface Session {
-    backendToken?: string;
     user: {
       id: string;
       name?: string | null;
@@ -17,7 +16,6 @@ declare module 'next-auth' {
   interface User {
     id: string;
     role?: string;
-    backendToken?: string;
     emailVerified?: boolean;
   }
 }
@@ -26,7 +24,6 @@ declare module 'next-auth/jwt' {
   interface JWT {
     id?: string;
     role?: string;
-    backendToken?: string;
     emailVerified?: boolean;
   }
 }

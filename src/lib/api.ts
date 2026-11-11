@@ -1,9 +1,9 @@
 /**
  * Production API Client for Super Admin Governance Dashboard
- * Handles authenticated communication with the backend API only (the backend talks to the AI service)
+ * Uses HttpOnly cookies (`vtry_admin_access`, `vtry_admin_refresh`, `vtry_admin_sid`) + single-flight refresh.
  */
 
-const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:4000';
+export const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:4000';
 
 export class ApiError extends Error {
   constructor(public status: number, message: string, public data?: any) {
@@ -12,24 +12,78 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
+let refreshInFlight: Promise<boolean> | null = null;
+
+function isBackendUrl(url: string): boolean {
+  return url.startsWith(BACKEND_API_URL) || url.startsWith('/');
+}
+
+function shouldAttemptRefresh(url: string): boolean {
+  const lower = url.toLowerCase();
+  return !(
+    lower.includes('/auth/login') ||
+    lower.includes('/auth/register') ||
+    lower.includes('/auth/refresh') ||
+    lower.includes('/auth/logout')
+  );
+}
+
+export async function refreshAdminSession(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  if (refreshInFlight) return refreshInFlight;
+
+  refreshInFlight = (async () => {
+    try {
+      const res = await fetch(`${BACKEND_API_URL}/api/v1/admin/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'X-Auth-Portal': 'admin',
+          'X-Auth-Transport': 'cookie',
+        },
+      });
+      return res.ok;
+    } catch {
+      return false;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+
+  return refreshInFlight;
+}
+
+export async function adminFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const headers = new Headers(options.headers || {});
   if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
 
-  // Inject Authorization token if stored in localStorage
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('admin_token');
-    if (token && !headers.has('Authorization')) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
+  const backendCall = isBackendUrl(url);
+  if (backendCall) {
+    headers.set('X-Auth-Portal', 'admin');
+    headers.set('X-Auth-Transport', 'cookie');
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers
-  });
+  const doFetch = () =>
+    fetch(url, {
+      ...options,
+      headers,
+      credentials: backendCall ? 'include' : options.credentials,
+    });
+
+  let response = await doFetch();
+  if (response.status === 401 && backendCall && shouldAttemptRefresh(url)) {
+    const refreshed = await refreshAdminSession();
+    if (refreshed) {
+      response = await doFetch();
+    }
+  }
+  return response;
+}
+
+async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
+  const response = await adminFetch(url, options);
 
   if (!response.ok) {
     let errorData: any;
@@ -47,10 +101,32 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
 export const superAdminApi = {
   // Authentication & Recovery
   login: (credentials: { email: string; password: string }) => {
-    return request<{ token: string; admin: any }>(`${BACKEND_API_URL}/api/v1/admin/auth/login`, {
+    return request<{ sessionId?: string; admin: any }>(`${BACKEND_API_URL}/api/v1/admin/auth/login`, {
       method: 'POST',
       body: JSON.stringify(credentials)
     });
+  },
+
+  session: () => {
+    return request<{
+      authenticated: boolean;
+      refreshed?: boolean;
+      sessionId?: string | null;
+      user: any | null;
+    }>(`${BACKEND_API_URL}/api/v1/admin/auth/session`, {
+      method: 'GET',
+      cache: 'no-store',
+    });
+  },
+
+  logout: () => {
+    return request<{ ok: boolean; loggedOut: boolean; message: string }>(
+      `${BACKEND_API_URL}/api/v1/admin/auth/logout`,
+      {
+        method: 'POST',
+        body: JSON.stringify({}),
+      },
+    );
   },
 
   verifyEmail: (payload: { token?: string; email?: string; code?: string }) => {

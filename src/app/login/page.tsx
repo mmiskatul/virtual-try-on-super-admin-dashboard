@@ -51,6 +51,18 @@ function AdminLoginContent() {
     setNeedsVerificationEmail(null);
     setResendMessage(null);
 
+    try {
+      await superAdminApi.login({ email, password });
+    } catch (err: any) {
+      if (err?.data?.code === 'EMAIL_NOT_VERIFIED') {
+        setNeedsVerificationEmail(email);
+        setErrorMsg('Administrator email verification is required before signing in.');
+      } else {
+        setErrorMsg(err?.message || 'Invalid administrator email or password.');
+      }
+      return;
+    }
+
     const result = await signIn('credentials', {
       redirect: false,
       email,
@@ -58,21 +70,19 @@ function AdminLoginContent() {
     });
 
     if (result?.error) {
-      if (result.error === 'EMAIL_NOT_VERIFIED') {
-        setNeedsVerificationEmail(email);
-        setErrorMsg('Administrator email verification is required before signing in.');
-      } else if (result.error === 'SERVICE_UNAVAILABLE') {
+      if (result.error === 'SERVICE_UNAVAILABLE') {
         setErrorMsg('Backend server is unreachable. Please ensure the backend API is running on port 4000.');
       } else {
-        setErrorMsg(result.error === 'CredentialsSignin' ? 'Invalid administrator email or password.' : result.error);
+        setErrorMsg(result.error === 'CredentialsSignin' ? 'Could not establish administrator session.' : result.error);
       }
       return;
     }
 
-    const updatedSession = await getSession();
-    if (updatedSession?.backendToken && typeof window !== 'undefined') {
-      localStorage.setItem('admin_token', updatedSession.backendToken);
+    if (typeof window !== 'undefined' && localStorage.getItem('admin_token')) {
+      localStorage.removeItem('admin_token');
     }
+
+    await getSession();
 
     if (typeof window !== 'undefined') {
       window.location.assign(callbackUrl);
@@ -130,9 +140,9 @@ function AdminLoginContent() {
             </Link>
             <button
               type="button"
-              onClick={() => {
-                if (typeof window !== 'undefined') localStorage.removeItem('admin_token');
-                signOut({ redirect: false });
+              onClick={async () => {
+                const { logoutAdmin } = await import('../../lib/logout');
+                await logoutAdmin({ redirect: false });
               }}
               className="px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700"
             >

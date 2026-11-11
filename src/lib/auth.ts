@@ -4,6 +4,23 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 const BACKEND_API_URL =
   process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:4000';
 
+const PLATFORM_ADMIN_ROLES = new Set([
+  'SUPER_ADMIN',
+  'PLATFORM_OPS',
+  'SUPPORT_AGENT',
+  'BILLING_ADMIN',
+  'TRUST_SAFETY',
+]);
+
+function readCookieHeader(req: any): string | undefined {
+  const headers = req?.headers;
+  if (!headers) return undefined;
+  if (typeof headers.get === 'function') {
+    return headers.get('cookie') || undefined;
+  }
+  return typeof headers.cookie === 'string' ? headers.cookie : undefined;
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -12,7 +29,39 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Admin Email', type: 'email', placeholder: 'admin@vton-platform.io' },
         password: { label: 'Security Key', type: 'password' }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
+        const cookieHeader = readCookieHeader(req);
+        if (cookieHeader && (cookieHeader.includes('vtry_admin_access=') || cookieHeader.includes('vtry_admin_refresh='))) {
+          try {
+            const sessionRes = await fetch(`${BACKEND_API_URL}/api/v1/admin/auth/session`, {
+              method: 'GET',
+              headers: {
+                Cookie: cookieHeader,
+                'X-Auth-Portal': 'admin',
+                'X-Auth-Transport': 'cookie',
+              },
+              cache: 'no-store',
+            });
+            const sessionData = await sessionRes.json().catch(() => ({}));
+            if (sessionRes.ok && sessionData?.authenticated && sessionData?.user) {
+              const role = sessionData.user.role || '';
+              if (!PLATFORM_ADMIN_ROLES.has(role)) {
+                throw new Error('Access restricted to Platform Super Admins only.');
+              }
+              return {
+                id: sessionData.user.id,
+                name: sessionData.user.name,
+                email: sessionData.user.email,
+                image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+                role,
+                emailVerified: Boolean(sessionData.user.emailVerified),
+              };
+            }
+          } catch (err: any) {
+            if (err?.message?.includes('restricted')) throw err;
+          }
+        }
+
         if (!credentials?.email || !credentials?.password) {
           throw new Error('Administrator email and security password are required.');
         }
@@ -21,7 +70,11 @@ export const authOptions: NextAuthOptions = {
         try {
           response = await fetch(`${BACKEND_API_URL}/api/v1/admin/auth/login`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Auth-Portal': 'admin',
+              'X-Auth-Transport': 'cookie',
+            },
             body: JSON.stringify({
               email: credentials.email,
               password: credentials.password
@@ -51,7 +104,6 @@ export const authOptions: NextAuthOptions = {
           image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
           role: data.admin.role || 'SUPER_ADMIN',
           emailVerified: Boolean(data.admin.emailVerified),
-          backendToken: data.token
         };
       }
     })
@@ -69,7 +121,6 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = user.role || 'SUPER_ADMIN';
-        token.backendToken = user.backendToken;
         token.emailVerified = Boolean(user.emailVerified);
       }
       return token;
@@ -80,7 +131,6 @@ export const authOptions: NextAuthOptions = {
         session.user.role = (token.role as string) || 'SUPER_ADMIN';
         session.user.emailVerified = Boolean(token.emailVerified);
       }
-      session.backendToken = token.backendToken;
       return session;
     }
   },
