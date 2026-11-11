@@ -20,16 +20,19 @@ export function usePlatformSync() {
     }
 
     try {
-      const [overview, tenants, logs, gens, aiMetrics] = await Promise.allSettled([
+      const [overview, tenants, logs, gens, aiMetrics, snapshotRes] = await Promise.allSettled([
         platformService.getOverview(),
         platformService.getTenants(),
         platformService.getAuditLogs(),
         platformService.getGenerations(undefined, 50),
         platformService.getAiMetrics(),
+        platformService.getControlPlaneSnapshot(),
       ]);
 
       const anyAuthedOk =
-        overview.status === 'fulfilled' || tenants.status === 'fulfilled';
+        overview.status === 'fulfilled' ||
+        tenants.status === 'fulfilled' ||
+        snapshotRes.status === 'fulfilled';
 
       if (tenants.status === 'fulfilled' && Array.isArray(tenants.value)) {
         mergeLiveTenants(tenants.value);
@@ -39,6 +42,9 @@ export function usePlatformSync() {
       }
       if (gens.status === 'fulfilled' && Array.isArray(gens.value)) {
         setLiveGenerations(gens.value);
+      }
+      if (snapshotRes.status === 'fulfilled' && snapshotRes.value?.data) {
+        usePlatformStore.getState().hydrateControlPlaneSnapshot?.(snapshotRes.value.data);
       }
       setBackendTelemetry({
         overview: overview.status === 'fulfilled' ? overview.value : null,

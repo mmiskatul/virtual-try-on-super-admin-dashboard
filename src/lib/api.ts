@@ -237,5 +237,98 @@ export const superAdminApi = {
       method: 'POST',
       body: JSON.stringify({})
     });
-  }
+  },
+
+  // Phase 5 & 6 Complete Enterprise Control Plane APIs
+  getControlPlaneSnapshot: () => {
+    return request<{ success: boolean; data: any }>(`${BACKEND_API_URL}/api/v1/admin/control-plane/snapshot`);
+  },
+
+  createTenant: (payload: { name: string; slug: string; contactEmail: string; planSlug: 'STARTER' | 'PRO' | 'ENTERPRISE' }) => {
+    return request<{ success: boolean; data: any }>(`${BACKEND_API_URL}/api/v1/admin/tenants`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  getUsers: () => {
+    return request<{ success: boolean; data: { users: any[] } }>(`${BACKEND_API_URL}/api/v1/admin/users`);
+  },
+
+  setUserStatus: (userId: string, status: 'ACTIVE' | 'SUSPENDED', reason?: string) => {
+    return request<{ success: boolean; data: any }>(`${BACKEND_API_URL}/api/v1/admin/users/${encodeURIComponent(userId)}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, reason })
+    });
+  },
+
+  moderateProduct: (productId: string, payload: { moderationStatus: string; note?: string; featured?: boolean; sponsored?: boolean }) => {
+    return request<{ success: boolean; data: any }>(`${BACKEND_API_URL}/api/v1/admin/moderation/products/${encodeURIComponent(productId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  grantCredits: (tenantId: string, payload: { delta: number; promo?: boolean; reason: string }) => {
+    return request<{ success: boolean; data: any }>(`${BACKEND_API_URL}/api/v1/admin/tenants/${encodeURIComponent(tenantId)}/credits/grant`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  toggleAiModel: (modelId: string, payload: { active?: boolean; isDefault?: boolean }) => {
+    return request<{ success: boolean; data: any }>(`${BACKEND_API_URL}/api/v1/admin/ai/models/${encodeURIComponent(modelId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  updateAiRouting: (payload: Record<string, unknown>) => {
+    return request<{ success: boolean; data: any }>(`${BACKEND_API_URL}/api/v1/admin/ai/routing`, {
+      method: 'PUT',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  toggleFeatureFlag: (key: string, payload: { globalEnabled?: boolean; rolloutPct?: number }) => {
+    return request<{ success: boolean; data: any }>(`${BACKEND_API_URL}/api/v1/admin/feature-flags/${encodeURIComponent(key)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  saveCmsPage: (payload: Record<string, unknown>) => {
+    return request<{ success: boolean; data: any }>(`${BACKEND_API_URL}/api/v1/admin/cms`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  addWebhook: (payload: { url: string; events: string[]; tenantId?: string }) => {
+    return request<{ success: boolean; data: any }>(`${BACKEND_API_URL}/api/v1/admin/webhooks`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  updateSettings: (payload: Record<string, unknown>) => {
+    return request<{ success: boolean; data: any }>(`${BACKEND_API_URL}/api/v1/admin/settings`, {
+      method: 'PUT',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  startViewAs: (tenantId: string, payload: { mode: 'READ_ONLY' | 'SUPPORT_WRITE'; reason: string }) => {
+    return request<{ success: boolean; data: any }>(`${BACKEND_API_URL}/api/v1/admin/tenants/${encodeURIComponent(tenantId)}/view-as`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  endViewAs: (sessionId: string) => {
+    return request<{ success: boolean; data: any }>(`${BACKEND_API_URL}/api/v1/admin/view-as/${encodeURIComponent(sessionId)}/end`, {
+      method: 'POST',
+      body: JSON.stringify({})
+    });
+  },
 };

@@ -64,6 +64,7 @@ import {
   DEMO_WEBHOOKS,
 } from '../data/platformDemoSeed';
 import { DEFAULT_ADMIN_PERMISSIONS } from '../config/permissions';
+import { superAdminApi } from '../lib/api';
 
 export interface PlatformStoreState {
   isLiveBackend: boolean;
@@ -119,6 +120,7 @@ export interface PlatformStoreState {
   mergeLiveTenants: (raw: any[]) => void;
   setLiveAuditLogs: (raw: any[]) => void;
   setLiveGenerations: (raw: any[]) => void;
+  hydrateControlPlaneSnapshot?: (snap: any) => void;
 
   setActiveRole: (role: PlatformRole) => void;
   toggleRolePermission: (role: PlatformRole, mod: PlatformModule, action: PlatformAction) => void;
@@ -710,6 +712,71 @@ export const usePlatformStore = create<PlatformStoreState>()(
       updateSettings: (partial) => {
         set((s) => ({ settings: { ...s.settings, ...partial } }));
         get().recordAudit('PLATFORM_SETTINGS_UPDATED', 'Global Config', `Modified ${Object.keys(partial).join(', ')}`);
+        if (get().isLiveBackend) void superAdminApi.updateSettings(partial).catch(() => undefined);
+      },
+
+      hydrateControlPlaneSnapshot: (snap) => {
+        if (!snap || typeof snap !== 'object') return;
+        set((s) => {
+          const nextUsers =
+            Array.isArray(snap.users) && snap.users.length > 0
+              ? snap.users.map((u: any) => ({
+                  id: u.id,
+                  name: u.name,
+                  email: u.email,
+                  role: u.role,
+                  tenantId: u.tenantId || undefined,
+                  status: u.status === 'SUSPENDED' ? 'SUSPENDED' : 'ACTIVE',
+                  mfaEnabled: Boolean(u.mfaEnabled),
+                  emailVerified: Boolean(u.emailVerified),
+                  lastLoginAt: u.createdAt || 'Live',
+                }))
+              : s.users;
+
+          const nextFlags =
+            Array.isArray(snap.featureFlags) && snap.featureFlags.length > 0
+              ? snap.featureFlags.map((f: any) => ({
+                  key: f.key,
+                  name: f.name,
+                  description: f.description,
+                  owner: f.owner,
+                  globalEnabled: Boolean(f.globalEnabled),
+                  rolloutPercentage: Number(f.rolloutPct ?? 100),
+                  tenantOverrides: Object.entries(f.overrides || {}).map(([tid, enabled]) => ({
+                    tenantId: tid,
+                    enabled: Boolean(enabled),
+                  })),
+                }))
+              : s.featureFlags;
+
+          const nextModProducts =
+            Array.isArray(snap.moderationProducts) && snap.moderationProducts.length > 0
+              ? snap.moderationProducts.map((p: any) => ({
+                  id: p.productId,
+                  productName: p.productName,
+                  sku: p.sku,
+                  brandName: p.brandName,
+                  category: p.category,
+                  price: Number(p.price || 0),
+                  image: p.image || '',
+                  marketplacePublished: Boolean(p.marketplacePublished),
+                  moderationStatus: p.moderationStatus || 'APPROVED',
+                  moderationNote: p.moderationNote,
+                  featured: Boolean(p.featured),
+                  sponsored: Boolean(p.sponsored),
+                }))
+              : s.modProducts;
+
+          return {
+            users: nextUsers,
+            featureFlags: nextFlags,
+            modProducts: nextModProducts,
+            cmsPages: Array.isArray(snap.cmsPages) && snap.cmsPages.length > 0 ? snap.cmsPages : s.cmsPages,
+            webhooks: Array.isArray(snap.webhooks) && snap.webhooks.length > 0 ? snap.webhooks : s.webhooks,
+            creditLedger:
+              Array.isArray(snap.creditLedger) && snap.creditLedger.length > 0 ? snap.creditLedger : s.creditLedger,
+          };
+        });
       },
 
       recordAudit: (action, target, details, tenantContext, reason) =>
