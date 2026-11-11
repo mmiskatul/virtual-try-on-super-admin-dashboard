@@ -127,6 +127,31 @@ export const superAdminApi = {
     });
   },
 
+  // Usage, quota and generation ledger
+  getUsageSummary: () => {
+    return request<any[]>(`${SUPER_ADMIN_API_URL}/api/v1/admin/usage`);
+  },
+
+  getGenerations: (tenantId?: string, limit = 50) => {
+    const qs = new URLSearchParams({ limit: String(limit), ...(tenantId ? { tenantId } : {}) });
+    return request<any[]>(`${SUPER_ADMIN_API_URL}/api/v1/admin/generations?${qs}`);
+  },
+
+  getUsageLedger: (tenantId?: string, limit = 50) => {
+    const qs = new URLSearchParams({ limit: String(limit), ...(tenantId ? { tenantId } : {}) });
+    return request<any[]>(`${SUPER_ADMIN_API_URL}/api/v1/admin/usage-ledger?${qs}`);
+  },
+
+  updateTenantPlan: (
+    tenantId: string,
+    body: { plan?: string; tryOnMonthlyQuota?: number; productLimit?: number; status?: string }
+  ) => {
+    return request<any>(`${SUPER_ADMIN_API_URL}/api/v1/admin/tenants/${tenantId}/plan`, {
+      method: 'PATCH',
+      body: JSON.stringify(body)
+    });
+  },
+
   // Audit Logs
   getAuditLogs: () => {
     return request<any[]>(`${SUPER_ADMIN_API_URL}/api/v1/admin/audit-logs`);

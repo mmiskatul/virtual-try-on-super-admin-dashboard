@@ -224,15 +224,6 @@ function AdminLoginContent() {
           <span>{isSubmitting ? 'Authenticating...' : 'Sign In to Governance Console'}</span>
         </Button>
 
-        <Button
-          type="button"
-          variant="outline"
-          disabled={isSubmitting}
-          onClick={() => performLogin('admin@vton-platform.io', 'Admin@123456')}
-          className="w-full"
-        >
-          Instant Demo Super Admin Login
-        </Button>
       </form>
     </AuthShell>
   );
