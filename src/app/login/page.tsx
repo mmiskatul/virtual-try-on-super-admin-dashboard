@@ -15,8 +15,8 @@ import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
 
 function sanitizeCallbackUrl(raw: string | null): string {
-  if (!raw || !raw.startsWith('/') || raw.startsWith('//')) {
-    return '/';
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw === '/' || raw.startsWith('/login')) {
+    return '/admin';
   }
   return raw;
 }
@@ -74,8 +74,12 @@ function AdminLoginContent() {
       localStorage.setItem('admin_token', updatedSession.backendToken);
     }
 
-    router.push(callbackUrl);
-    router.refresh();
+    if (typeof window !== 'undefined') {
+      window.location.assign(callbackUrl);
+    } else {
+      router.replace(callbackUrl);
+      router.refresh();
+    }
   };
 
   const onSubmit = async (data: AdminLoginFormValues) => {
