@@ -124,7 +124,7 @@ export default function SuperAdminDashboardPage() {
   const totalTryOnSessions = tenants.reduce((s, t) => s + t.tryOnUsed, 0);
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100">
+    <div className="flex min-h-screen bg-white text-gray-900">
       <ToastNotification message={toastMessage} />
 
       <AdminSidebar

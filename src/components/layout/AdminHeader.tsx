@@ -25,7 +25,7 @@ export function AdminHeader({ activeTab, onRefresh }: AdminHeaderProps) {
   return (
     <div className="flex items-center justify-between">
       <div>
-        <h1 className="text-2xl font-black text-white">
+        <h1 className="text-2xl font-black text-gray-900">
           {activeTab === 'overview' && 'Platform Governance Overview'}
           {activeTab === 'tenants' && 'Brand Tenant Directory & Access Control'}
           {activeTab === 'ai' && 'AI Virtual Try-On Infrastructure'}
@@ -33,14 +33,14 @@ export function AdminHeader({ activeTab, onRefresh }: AdminHeaderProps) {
           {activeTab === 'subscriptions' && 'Tenant Subscription Quotas'}
           {activeTab === 'audit' && 'Security & Administration Audit Trail'}
         </h1>
-        <p className="text-sm text-slate-400 mt-1">
+        <p className="text-sm text-gray-500 mt-1">
           Super-Administrator level operations, tenant lifecycle, and system reliability
         </p>
       </div>
 
       <div className="flex items-center gap-3">
         {session?.user ? (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-gray-200 text-xs">
             {session.user.image ? (
               <Image
                 src={session.user.image}
@@ -50,10 +50,10 @@ export function AdminHeader({ activeTab, onRefresh }: AdminHeaderProps) {
                 className="w-5 h-5 rounded-full object-cover"
               />
             ) : (
-              <ShieldCheck className="w-4 h-4 text-amber-400" />
+              <ShieldCheck className="w-4 h-4 text-black" />
             )}
-            <span className="font-semibold text-white">{session.user.name || 'Super Admin'}</span>
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300">
+            <span className="font-semibold text-gray-900">{session.user.name || 'Super Admin'}</span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-gray-100 text-black">
               {(session.user as any).role || 'SUPER_ADMIN'}
             </span>
             <button
@@ -62,7 +62,7 @@ export function AdminHeader({ activeTab, onRefresh }: AdminHeaderProps) {
                 signOut({ callbackUrl: '/login' });
               }}
               title="Sign Out"
-              className="ml-1 text-slate-400 hover:text-rose-400 transition-colors"
+              className="ml-1 text-gray-500 hover:text-rose-600 transition-colors"
             >
               <LogOut className="w-3.5 h-3.5" />
             </button>
@@ -70,7 +70,7 @@ export function AdminHeader({ activeTab, onRefresh }: AdminHeaderProps) {
         ) : (
           <Link
             href="/login"
-            className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-colors flex items-center gap-1.5"
+            className="px-3.5 py-1.5 rounded-xl bg-black hover:bg-gray-800 text-white font-bold text-xs transition-colors flex items-center gap-1.5"
           >
             <User className="w-3.5 h-3.5" />
             <span>Admin Sign In</span>
@@ -79,7 +79,7 @@ export function AdminHeader({ activeTab, onRefresh }: AdminHeaderProps) {
 
         <button
           onClick={onRefresh}
-          className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition-colors"
+          className="p-2 rounded-xl bg-white border border-gray-200 text-gray-700 hover:text-black transition-colors"
           title="Sync Cache"
         >
           <RefreshCw className="w-4 h-4" />

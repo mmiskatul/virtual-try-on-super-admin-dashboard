@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Platform control center for multi-tenant virtual try-on infrastructure, quotas, and AI engine telemetry.',
     start_url: '/',
     display: 'standalone',
-    background_color: '#020617',
-    theme_color: '#f59e0b',
+    background_color: '#ffffff',
+    theme_color: '#000000',
     icons: [
       {
         src: '/favicon.ico',
