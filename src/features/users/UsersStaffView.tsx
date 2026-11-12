@@ -104,9 +104,9 @@ export function UsersStaffView({
             <EmptyPanel title="User not found" description="No platform identity matches this ID." />
           ) : (
             <SectionPanel title="Identity Security Profile" right={<StatusPill status={user.status} />}>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                <div><span className="text-slate-400">User ID</span><p className="font-mono font-bold">{user.id}</p></div>
-                <div><span className="text-slate-400">Email</span><p className="font-semibold">{user.email}</p></div>
+              <div className="grid grid-cols-1 min-[420px]:grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 text-xs">
+                <div><span className="text-slate-400">User ID</span><p className="font-mono font-bold break-all">{user.id}</p></div>
+                <div><span className="text-slate-400">Email</span><p className="font-semibold break-all">{user.email}</p></div>
                 <div><span className="text-slate-400">Category</span><p className="font-bold">{user.category}</p></div>
                 <div><span className="text-slate-400">Associated Tenant</span><p>{user.tenantName || 'Global'}</p></div>
                 <div><span className="text-slate-400">MFA Enforcement</span><p><StatusPill status={user.mfaEnabled ? 'ACTIVE' : 'PENDING'} /></p></div>
@@ -181,7 +181,7 @@ export function UsersStaffView({
           subtitle="Govern all 5 user tiers across multi-tenant organizations, enforce MFA on privileged staff roles, and manage permissions."
         />
 
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:flex-wrap">
           {[
             ['users', 'All Users (100)', '/admin/users'],
             ['invitations', 'Pending Invitations', '/admin/users/invitations'],
@@ -193,7 +193,7 @@ export function UsersStaffView({
               key={id}
               href={href}
               onClick={() => setTab(id as UsersStaffTab)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border whitespace-nowrap shrink-0 ${
                 tab === id
                   ? 'bg-slate-900 text-white border-slate-900'
                   : 'bg-white text-slate-600 border-slate-200'
@@ -204,7 +204,7 @@ export function UsersStaffView({
           ))}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <MetricCard label="Total Platform Identities" value={safeUsers.length} icon={<Users className="w-4 h-4" />} />
           <MetricCard label="Brand Owners & Staff" value={safeUsers.filter((u) => u.category.startsWith('BRAND')).length} icon={<UserCheck className="w-4 h-4" />} />
           <MetricCard label="Platform Staff + Super Admins" value={safeUsers.filter((u) => u.category === 'SUPER_ADMIN' || u.category === 'PLATFORM_STAFF').length} icon={<ShieldCheck className="w-4 h-4 text-indigo-600" />} />
@@ -215,8 +215,8 @@ export function UsersStaffView({
           <SectionPanel
             title={tab === 'staff' ? 'Platform Staff & Administrators' : tab === 'invitations' ? 'Pending Verification Invitations' : 'Global User Directory'}
             right={
-              <div className="flex flex-wrap gap-2">
-                <div className="relative w-56">
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                <div className="relative w-full sm:w-56">
                   <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     value={search}
@@ -229,7 +229,7 @@ export function UsersStaffView({
                   <select
                     value={catFilter}
                     onChange={(e) => setCatFilter(e.target.value)}
-                    className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs bg-white font-semibold"
+                    className="w-full sm:w-auto rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs bg-white font-semibold"
                   >
                     <option value="ALL">All Categories</option>
                     <option value="SUPER_ADMIN">Super Admin</option>
@@ -242,7 +242,56 @@ export function UsersStaffView({
               </div>
             }
           >
-            <div className="overflow-x-auto max-h-[520px]">
+            <div className="sm:hidden space-y-2.5 text-xs">
+              {filteredUsers.slice(0, 40).map((u) => (
+                <div key={u.id} className="rounded-lg border border-slate-200 bg-white p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <Link href={`/admin/users/${u.id}`} className="font-bold text-slate-900 hover:text-indigo-600 truncate block">
+                        {u.name}
+                      </Link>
+                      <p className="text-[11px] text-slate-500 break-all">{u.email}</p>
+                    </div>
+                    <StatusPill status={u.status} />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600">
+                    <span className="font-semibold text-slate-800">{u.category.replace(/_/g, ' ')}</span>
+                    <span>•</span>
+                    <span>{u.tenantName || 'Global'}</span>
+                    <span>•</span>
+                    <span>MFA: {u.mfaEnabled ? 'ON' : 'OFF'}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                    <span className="text-[11px] text-slate-400">{u.lastLoginAt}</span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Link href={`/admin/users/${u.id}`}>
+                        <Button variant="outline" size="sm" className="h-7 px-2.5 text-[11px]">Inspect</Button>
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={!canManageUsers}
+                        onClick={() =>
+                          setConfirmTarget({
+                            title: `${u.status === 'ACTIVE' ? 'Suspend' : 'Activate'} ${u.email}?`,
+                            desc: 'Updates user access state across JWT authentication boundaries.',
+                            onRun: () => {
+                              updateUserStatus(u.id, u.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE');
+                              setConfirmTarget(null);
+                              notify(`Updated ${u.email}.`);
+                            },
+                          })
+                        }
+                        className="h-7 px-2 text-[11px]"
+                      >
+                        {u.status === 'ACTIVE' ? 'Suspend' : 'Activate'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden sm:block overflow-x-auto max-h-[520px]">
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase text-[10px]">
@@ -373,7 +422,7 @@ export function UsersStaffView({
                 <select
                   value={selectedMatrixRole}
                   onChange={(e) => setSelectedMatrixRole(e.target.value)}
-                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold bg-white"
+                  className="w-full sm:w-auto rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold bg-white"
                 >
                   {Object.entries(allRolesMap).map(([k, v]) => (
                     <option key={k} value={k}>
@@ -385,10 +434,45 @@ export function UsersStaffView({
             >
               {selectedMatrixRole === 'SUPER_ADMIN' && (
                 <p className="text-xs text-slate-600 flex items-center gap-1.5 pb-2">
-                  <Lock className="w-3.5 h-3.5" /> Root Super Admin permissions are locked to prevent accidental lockout.
+                  <Lock className="w-3.5 h-3.5 shrink-0" /> Root Super Admin permissions are locked to prevent accidental lockout.
                 </p>
               )}
-              <div className="overflow-x-auto">
+              <div className="sm:hidden space-y-2.5 text-xs">
+                {ALL_PLATFORM_MODULES.map((mod) => {
+                  const effective =
+                    roleOverrides[selectedMatrixRole]?.[mod] ||
+                    DEFAULT_ADMIN_PERMISSIONS[selectedMatrixRole]?.[mod] ||
+                    [];
+                  return (
+                    <div key={mod} className="rounded-lg border border-slate-200 bg-white p-3 space-y-2">
+                      <p className="font-bold uppercase text-[11px] text-slate-800">{mod}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {ALL_PLATFORM_ACTIONS.map((act) => {
+                          const checked =
+                            selectedMatrixRole === 'SUPER_ADMIN' || effective.includes(act);
+                          const disabled = !canManageUsers || selectedMatrixRole === 'SUPER_ADMIN';
+                          return (
+                            <button
+                              key={act}
+                              type="button"
+                              disabled={disabled}
+                              onClick={() => toggleRolePermission(selectedMatrixRole, mod, act)}
+                              className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase border transition-colors ${
+                                checked
+                                  ? 'bg-indigo-600 text-white border-indigo-600'
+                                  : 'bg-slate-50 text-slate-500 border-slate-200'
+                              } ${disabled ? 'opacity-70 cursor-not-allowed' : ''}`}
+                            >
+                              {act.replace('_', ' ')}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-left text-[11px]">
                   <thead>
                     <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase">

@@ -126,7 +126,7 @@ export function SupportCommsGrowthView({
                       placeholder="Write support response or internal staff note..."
                       className="w-full rounded-lg border border-slate-200 p-3 text-xs"
                     />
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <label className="flex items-center gap-2">
                         <input
                           type="checkbox"
@@ -143,6 +143,7 @@ export function SupportCommsGrowthView({
                           setReplyText('');
                           notify(replyInternal ? 'Added internal ticket note.' : 'Logged ticket reply.');
                         }}
+                        className="w-full sm:w-auto"
                       >
                         Post Reply
                       </Button>
@@ -220,7 +221,7 @@ export function SupportCommsGrowthView({
 
         {groupMode === 'support' && (
           <>
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:flex-wrap">
               {[
                 ['support-overview', 'Support Dashboard', '/admin/support'],
                 ['tickets', 'All Tickets', '/admin/support/tickets'],
@@ -230,7 +231,7 @@ export function SupportCommsGrowthView({
                   key={id}
                   href={href}
                   onClick={() => setTab(id as SupportCommsTab)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border whitespace-nowrap shrink-0 ${
                     tab === id ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200'
                   }`}
                 >
@@ -239,7 +240,7 @@ export function SupportCommsGrowthView({
               ))}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <MetricCard label="Open / Escalated Tickets" value={safeTickets.filter((t) => ['OPEN', 'ESCALATED', 'IN_PROGRESS'].includes(t.status)).length} icon={<LifeBuoy className="w-4 h-4 text-rose-600" />} />
               <MetricCard label="Sample Avg First Response" value="42 min" icon={<MessageSquare className="w-4 h-4" />} />
               <MetricCard label="Sample Resolution SLA" value="94.2%" icon={<TrendingUp className="w-4 h-4 text-emerald-600" />} />
@@ -248,7 +249,31 @@ export function SupportCommsGrowthView({
 
             {tab !== 'knowledge-base' ? (
               <SectionPanel title="Support Queue">
-                <div className="overflow-x-auto">
+                <div className="sm:hidden space-y-2.5 text-xs">
+                  {safeTickets.map((t) => (
+                    <div key={t.id} className="rounded-lg border border-slate-200 bg-white p-3 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <Link href={`/admin/support/tickets/${t.id}`} className="font-bold text-indigo-700 hover:underline line-clamp-2 leading-snug">
+                            {t.id} — {t.subject}
+                          </Link>
+                          <p className="text-[11px] text-slate-500 mt-0.5">{t.requesterName} ({t.tenantName || 'Platform'})</p>
+                        </div>
+                        <StatusPill status={t.status} />
+                      </div>
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[11px] font-semibold text-slate-600">{t.category}</span>
+                          <StatusPill status={t.priority} />
+                        </div>
+                        <Link href={`/admin/support/tickets/${t.id}`}>
+                          <Button variant="outline" size="sm" className="h-7 px-2.5 text-[11px]">Inspect</Button>
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="hidden sm:block overflow-x-auto">
                   <table className="w-full text-left text-xs">
                     <thead>
                       <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase text-[10px]">
@@ -286,7 +311,7 @@ export function SupportCommsGrowthView({
             ) : (
               <SectionPanel title="Knowledge Base Articles">
                 <form
-                  className="flex gap-2 pb-2"
+                  className="flex flex-col sm:flex-row gap-2 pb-2"
                   onSubmit={(e) => {
                     e.preventDefault();
                     if (!kbTitle.trim()) return;
@@ -300,7 +325,7 @@ export function SupportCommsGrowthView({
                 </form>
                 <div className="space-y-2 text-xs">
                   {kbArticles.map((k) => (
-                    <div key={k.id} className="p-3 rounded-lg border border-slate-200 flex justify-between">
+                    <div key={k.id} className="p-3 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-2">
                       <span className="font-bold">{k.title} ({k.category})</span>
                       <StatusPill status={k.status} />
                     </div>
@@ -331,24 +356,24 @@ export function SupportCommsGrowthView({
                   notify('Published in-app platform announcement.');
                 }}
               >
-                <input value={annTitle} onChange={(e) => setAnnTitle(e.target.value)} placeholder="Announcement headline..." className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs" />
-                <select value={annAudience} onChange={(e) => setAnnAudience(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs bg-white">
+                <input value={annTitle} onChange={(e) => setAnnTitle(e.target.value)} placeholder="Announcement headline..." className="w-full sm:flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs" />
+                <select value={annAudience} onChange={(e) => setAnnAudience(e.target.value)} className="flex-1 sm:flex-none rounded-lg border border-slate-200 px-3 py-1.5 text-xs bg-white">
                   <option>All Brands</option>
                   <option>PRO + ENTERPRISE Tiers</option>
                   <option>Platform Staff</option>
                 </select>
-                <Button type="submit" size="sm" className="gap-1"><Send className="w-3.5 h-3.5" /> Broadcast In-App</Button>
+                <Button type="submit" size="sm" className="w-full sm:w-auto justify-center gap-1"><Send className="w-3.5 h-3.5" /> Broadcast In-App</Button>
               </form>
               <div className="space-y-2 text-xs">
                 {announcements.map((a) => (
-                  <div key={a.id} className="p-3 rounded-lg border border-slate-200 flex justify-between">
-                    <span><strong>{a.title}</strong> • Target: {a.audience} • {a.date}</span>
+                  <div key={a.id} className="p-3 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                    <span className="min-w-0 break-words"><strong>{a.title}</strong> • Target: {a.audience} • {a.date}</span>
                     <StatusPill status={a.status} />
                   </div>
                 ))}
                 {safeAlerts.map((al) => (
-                  <div key={al.id} className="p-3 rounded-lg bg-slate-50 border border-slate-100 flex justify-between">
-                    <span><strong>Alert:</strong> {al.title}</span>
+                  <div key={al.id} className="p-3 rounded-lg bg-slate-50 border border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                    <span className="min-w-0 break-words"><strong>Alert:</strong> {al.title}</span>
                     <StatusPill status={al.severity} />
                   </div>
                 ))}

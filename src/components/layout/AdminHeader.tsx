@@ -17,9 +17,9 @@ export function AdminHeader({ activeTab, onRefresh }: AdminHeaderProps) {
   const { data: session } = useSession();
 
   return (
-    <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-2xl font-black text-gray-900">
+    <div className="flex flex-wrap items-start sm:items-center justify-between gap-3">
+      <div className="min-w-0">
+        <h1 className="text-xl sm:text-2xl font-black text-gray-900">
           {activeTab === 'overview' && 'Platform Governance Overview'}
           {activeTab === 'tenants' && 'Brand Tenant Directory & Access Control'}
           {activeTab === 'ai' && 'AI Virtual Try-On Infrastructure'}

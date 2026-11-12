@@ -413,7 +413,7 @@ export function InfrastructureConfig() {
           </div>
 
           {/* SMTP Actions */}
-          <div className="grid grid-cols-2 gap-2.5 pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
             <button
               type="button"
               onClick={handleVerifySmtp}
@@ -497,7 +497,7 @@ export function InfrastructureConfig() {
           </div>
 
           {/* Live Table Metrics */}
-          <div className="grid grid-cols-4 gap-2 text-center">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
             <div className="p-2.5 rounded-xl bg-white border border-gray-200">
               <span className="text-[10px] text-gray-500 block">Tenants</span>
               <span className="text-sm font-extrabold text-gray-900">
@@ -555,7 +555,7 @@ export function InfrastructureConfig() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <button
               type="button"
               onClick={handleTestDatabase}

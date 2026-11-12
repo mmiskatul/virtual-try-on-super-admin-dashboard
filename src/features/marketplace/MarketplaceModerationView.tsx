@@ -145,7 +145,7 @@ export function MarketplaceModerationView({
           subtitle="Approve published brand listings, manage global taxonomies, enforce sponsored labeling, and build global marketplace homepage blocks."
         />
 
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:flex-wrap">
           {(isCmsView
             ? [
                 ['cms-dashboard', 'CMS Dashboard', '/admin/cms'],
@@ -169,7 +169,7 @@ export function MarketplaceModerationView({
               key={id}
               href={href}
               onClick={() => setTab(id as MarketplaceCmsTab)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border whitespace-nowrap shrink-0 ${
                 tab === id
                   ? 'bg-slate-900 text-white border-slate-900'
                   : 'bg-white text-slate-600 border-slate-200'
@@ -180,7 +180,7 @@ export function MarketplaceModerationView({
           ))}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <MetricCard label="Public Approved Listings" value={safeProducts.filter((p) => p.visibility === 'PUBLIC').length} icon={<Globe className="w-4 h-4 text-emerald-600" />} />
           <MetricCard label="Pending Moderation" value={safeProducts.filter((p) => p.moderationStatus === 'PENDING_REVIEW').length} icon={<ShieldCheck className="w-4 h-4 text-amber-600" />} />
           <MetricCard label="Open Abuse Reports" value={safeReports.filter((r) => r.status !== 'RESOLVED').length} icon={<Flag className="w-4 h-4 text-rose-600" />} />
@@ -189,7 +189,51 @@ export function MarketplaceModerationView({
 
         {(tab === 'marketplace-overview' || tab === 'products' || tab === 'featured') && (
           <SectionPanel title="Marketplace Listing Moderation Queue" subtitle="Moderation unpublishes non-compliant listings without editing the brand's private source product.">
-            <div className="overflow-x-auto">
+            <div className="sm:hidden space-y-2.5 text-xs">
+              {safeProducts
+                .filter((p) => (tab === 'featured' ? p.featured : true))
+                .map((p) => (
+                  <div key={p.id} className="rounded-lg border border-slate-200 bg-white p-3 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <Link href={`/admin/marketplace/products/${p.productId}`} className="font-bold text-slate-900 hover:underline line-clamp-2 leading-snug">
+                          {p.productName}
+                        </Link>
+                        <p className="text-[11px] text-slate-500 mt-0.5">{p.brandName} • {p.category} • ${p.price}</p>
+                      </div>
+                      <StatusPill status={p.moderationStatus} />
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                      <span className="text-slate-600">Reports: <strong>{p.reportsCount}</strong></span>
+                      <div className="flex items-center gap-1">
+                        {p.sponsored ? <StatusPill status="WARNING" /> : p.featured ? <StatusPill status="ACTIVE" /> : <span className="text-slate-500">Standard</span>}
+                        {p.sponsored && <span className="text-[10px] font-bold text-amber-800">SPONSORED</span>}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-100">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={!canModerate}
+                        onClick={() => { moderateProduct(p.id, 'APPROVED', true); notify(`Approved & featured ${p.productName}.`); }}
+                        className="flex-1 h-8 text-[11px]"
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={!canModerate}
+                        onClick={() => setConfirmReject({ id: p.id, name: p.productName })}
+                        className="flex-1 h-8 text-[11px] text-rose-700"
+                      >
+                        Unpublish
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase text-[10px]">
@@ -254,12 +298,12 @@ export function MarketplaceModerationView({
           <SectionPanel title="Brand Verification & Marketplace Standing">
             <div className="space-y-2 text-xs">
               {safeBrands.map((b) => (
-                <div key={b.id} className="p-3.5 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-3">
-                  <div>
+                <div key={b.id} className="p-3 sm:p-3.5 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
+                  <div className="min-w-0 flex-1">
                     <p className="font-bold text-slate-900">{b.brandName}</p>
-                    <p className="text-slate-500">{b.reviewerNote} • Reports: {b.reportsCount}</p>
+                    <p className="text-slate-500 break-words">{b.reviewerNote} • Reports: {b.reportsCount}</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
                     <StatusPill status={b.verificationStatus} />
                     <StatusPill status={b.marketplaceStatus} />
                     <Button
@@ -286,7 +330,7 @@ export function MarketplaceModerationView({
         {tab === 'categories' && (
           <SectionPanel title="Global Marketplace Categories">
             <form
-              className="flex gap-2 pb-3"
+              className="flex flex-col sm:flex-row gap-2 pb-3"
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!newCatName.trim()) return;
@@ -308,7 +352,7 @@ export function MarketplaceModerationView({
             </form>
             <div className="space-y-2 text-xs">
               {safeCats.map((c) => (
-                <div key={c.id} className="p-3 rounded-lg border border-slate-200 flex items-center justify-between">
+                <div key={c.id} className="p-3 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="font-bold text-slate-900">{c.order}. {c.name}</p>
                     <p className="text-slate-500">/{c.slug} • {c.productCount} products • SEO: {c.seoTitle}</p>
@@ -324,7 +368,7 @@ export function MarketplaceModerationView({
           <SectionPanel title="Platform Curated & Sponsored Collections">
             <div className="space-y-2 text-xs">
               {safeCols.map((col) => (
-                <div key={col.id} className="p-3.5 rounded-lg border border-slate-200 flex items-center justify-between">
+                <div key={col.id} className="p-3.5 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="font-bold text-slate-900">{col.title} {col.sponsored && '(SPONSORED)'}</p>
                     <p className="text-slate-500">{col.description} • {col.itemCount} items</p>
@@ -367,7 +411,7 @@ export function MarketplaceModerationView({
               </InlineAlert>
             )}
             <form
-              className="flex gap-2 pb-2"
+              className="flex flex-col sm:flex-row gap-2 pb-2"
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!newCmsTitle.trim()) return;
@@ -390,7 +434,7 @@ export function MarketplaceModerationView({
             </form>
             <div className="space-y-2 text-xs">
               {safeCms.map((p) => (
-                <div key={p.id} className="p-3 rounded-lg border border-slate-200 flex items-center justify-between">
+                <div key={p.id} className="p-3 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="font-bold text-slate-900">{p.title}</p>
                     <p className="text-slate-500">{p.type} • <code>{p.slug}</code> • Updated {p.updatedAt}</p>

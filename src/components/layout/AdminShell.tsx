@@ -95,6 +95,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const hideToast = useAdminUiStore((s) => s.hideToast);
 
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotifs, setShowNotifs] = useState(false);
   const [showQuickMenu, setShowQuickMenu] = useState(false);
@@ -218,7 +219,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       <aside
         className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-slate-950 text-slate-200 border-r border-slate-800 transition-all duration-200 lg:static ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        } ${sidebarCollapsed ? 'w-[72px]' : 'w-[272px] shrink-0'}`}
+        } ${sidebarCollapsed ? 'w-[272px] lg:w-[72px]' : 'w-[272px]'} shrink-0`}
       >
         <div className="h-16 px-4 flex items-center justify-between border-b border-slate-800">
           <Link href="/admin" className="flex items-center gap-2.5 min-w-0">
@@ -309,14 +310,51 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="p-3 border-t border-slate-800 text-[11px] space-y-2">
+        <div className="p-3 border-t border-slate-800 text-[11px] space-y-2.5">
           {!sidebarCollapsed && (
-            <div className="flex items-center justify-between text-slate-400">
-              <span>Role Context</span>
-              <span className="text-indigo-400 font-bold">
-                {ROLE_METADATA[activeRole]?.label || activeRole}
-              </span>
-            </div>
+            <>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-slate-400">
+                  <span>Role Context</span>
+                  <span className="text-indigo-400 font-bold truncate">
+                    {ROLE_METADATA[activeRole]?.label || activeRole}
+                  </span>
+                </div>
+                <select
+                  value={activeRole}
+                  onChange={(e) => setActiveRole(e.target.value)}
+                  aria-label="Preview RBAC Staff Role"
+                  className="xl:hidden w-full rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1.5 text-[11px] font-semibold text-slate-200"
+                >
+                  {Object.keys(ROLE_METADATA).map((rk) => (
+                    <option key={rk} value={rk}>
+                      Role: {ROLE_METADATA[rk].label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-800/80">
+                <div className="min-w-0">
+                  <p className="font-bold text-slate-200 truncate">
+                    {session?.user?.name || 'Platform Admin'}
+                  </p>
+                  <p className="text-[10px] text-slate-400 truncate">
+                    {session?.user?.email || 'admin@vton-platform.io'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowHelp(true);
+                    setMobileOpen(false);
+                  }}
+                  className="p-1.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-300 hover:text-white shrink-0"
+                  title="Control Plane Docs"
+                >
+                  <HelpCircle className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </>
           )}
           <button
             type="button"
@@ -373,7 +411,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         )}
 
         {/* Top Control Bar */}
-        <header className="h-16 bg-white border-b border-slate-200 px-4 sm:px-6 flex items-center justify-between gap-3 sticky top-0 z-30">
+        <header className="h-14 sm:h-16 bg-white border-b border-slate-200 px-3 sm:px-6 flex items-center justify-between gap-2 sm:gap-3 sticky top-0 z-30">
           <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
@@ -403,8 +441,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </nav>
           </div>
 
-          {/* Global Multi-Entity Search */}
-          <div className="relative flex-1 max-w-md">
+          {/* Global Multi-Entity Search (Desktop / Tablet) */}
+          <div className="hidden md:block relative flex-1 max-w-md min-w-0">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               value={searchQuery}
@@ -419,13 +457,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                     key={idx}
                     href={res.href}
                     onClick={() => setSearchQuery('')}
-                    className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-50 text-xs"
+                    className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg hover:bg-slate-50 text-xs"
                   >
-                    <div>
-                      <p className="font-bold text-slate-900">{res.label}</p>
-                      <p className="text-[11px] text-slate-500">{res.sub}</p>
+                    <div className="min-w-0">
+                      <p className="font-bold text-slate-900 truncate">{res.label}</p>
+                      <p className="text-[11px] text-slate-500 truncate">{res.sub}</p>
                     </div>
-                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-indigo-50 text-indigo-700">
+                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 shrink-0">
                       {res.category}
                     </span>
                   </Link>
@@ -435,7 +473,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Right Admin Controls */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Mobile Search Toggle */}
+            <button
+              type="button"
+              onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+              className="md:hidden p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+              aria-label="Toggle platform search"
+            >
+              {mobileSearchOpen ? <X className="w-4 h-4" /> : <Search className="w-4 h-4" />}
+            </button>
+
             {/* Role Preview Switcher */}
             <select
               value={activeRole}
@@ -455,12 +503,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={() => setShowQuickMenu(!showQuickMenu)}
-                className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 text-white px-2.5 py-1.5 text-xs font-semibold hover:bg-indigo-700"
+                className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 text-white px-2 sm:px-2.5 py-1.5 text-xs font-semibold hover:bg-indigo-700"
               >
-                <Plus className="w-3.5 h-3.5" /> Quick
+                <Plus className="w-3.5 h-3.5" />
+                <span className="hidden min-[380px]:inline">Quick</span>
               </button>
               {showQuickMenu && (
-                <div className="absolute right-0 mt-2 w-48 rounded-xl border border-slate-200 bg-white shadow-xl p-1.5 text-xs z-50">
+                <div className="absolute right-0 mt-2 w-52 max-w-[calc(100vw-1.5rem)] rounded-xl border border-slate-200 bg-white shadow-xl p-1.5 text-xs z-50">
                   <Link href="/admin/tenants/create" onClick={() => setShowQuickMenu(false)} className="block px-3 py-2 rounded-lg hover:bg-slate-50 font-semibold">
                     + Provision New Tenant
                   </Link>
@@ -481,7 +530,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={handleManualSync}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] font-bold ${
+              className={`inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg border text-[11px] font-bold ${
                 isLiveBackend
                   ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                   : 'border-amber-200 bg-amber-50 text-amber-800'
@@ -489,7 +538,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               title="Click to re-sync with :4000 backend"
             >
               <RefreshCw className={`w-3 h-3 ${syncing ? 'animate-spin' : ''}`} />
-              <span>{isLiveBackend ? `LIVE${backendLatencyMs ? ` (${backendLatencyMs}ms)` : ''}` : 'DEMO MODE'}</span>
+              <span className="hidden sm:inline">{isLiveBackend ? `LIVE${backendLatencyMs ? ` (${backendLatencyMs}ms)` : ''}` : 'DEMO MODE'}</span>
+              <span className="sm:hidden">{isLiveBackend ? 'LIVE' : 'DEMO'}</span>
             </button>
 
             {/* Notifications */}
@@ -507,7 +557,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 )}
               </button>
               {showNotifs && (
-                <div className="absolute right-0 mt-2 w-80 rounded-xl border border-slate-200 bg-white shadow-xl p-3 space-y-2 z-50 text-xs">
+                <div className="absolute right-0 mt-2 w-[calc(100vw-1.5rem)] max-w-xs sm:w-80 rounded-xl border border-slate-200 bg-white shadow-xl p-3 space-y-2 z-50 text-xs">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                     <span className="font-bold text-slate-900">Platform Alert Center</span>
                     <button type="button" onClick={() => setShowNotifs(false)} className="text-slate-400">
@@ -546,9 +596,80 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 max-w-[1600px] w-full mx-auto">
+        {mobileSearchOpen && (
+          <div className="md:hidden bg-white border-b border-slate-200 px-3 py-2.5 sticky top-14 z-20">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                autoFocus
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search tenants, users, subscriptions, jobs..."
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 pl-8 pr-3 py-2 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              {searchResults.length > 0 && (
+                <div className="mt-2 rounded-xl border border-slate-200 bg-white shadow-lg p-1.5 space-y-1 max-h-64 overflow-y-auto">
+                  {searchResults.map((res, idx) => (
+                    <Link
+                      key={idx}
+                      href={res.href}
+                      onClick={() => {
+                        setSearchQuery('');
+                        setMobileSearchOpen(false);
+                      }}
+                      className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg hover:bg-slate-50 text-xs"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-bold text-slate-900 truncate">{res.label}</p>
+                        <p className="text-[11px] text-slate-500 truncate">{res.sub}</p>
+                      </div>
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 shrink-0">
+                        {res.category}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        <main className="flex-1 p-3.5 sm:p-6 pb-24 lg:pb-6 max-w-[1600px] w-full mx-auto min-w-0">
           {children}
         </main>
+
+        {/* Mobile Bottom Quick Dock (< lg) */}
+        <nav
+          aria-label="Mobile quick navigation"
+          className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 px-1.5 py-1.5 grid grid-cols-5 gap-1"
+        >
+          {(
+            [
+              { href: '/admin', label: 'Overview', Icon: LayoutDashboard },
+              { href: '/admin/tenants', label: 'Tenants', Icon: Building2 },
+              { href: '/admin/marketplace/products', label: 'Moderation', Icon: Globe },
+              { href: '/admin/try-on', label: 'Try-On', Icon: Cpu },
+              { href: '/admin/system/health', label: 'System', Icon: ShieldCheck },
+            ] as const
+          ).map(({ href, label, Icon }) => {
+            const active =
+              href === '/admin'
+                ? pathname === '/admin' || pathname === '/admin/overview'
+                : pathname?.startsWith(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-lg text-[10px] font-bold transition-colors ${
+                  active ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="truncate max-w-full px-0.5">{label}</span>
+              </Link>
+            );
+          })}
+        </nav>
       </div>
 
       {showHelp && (

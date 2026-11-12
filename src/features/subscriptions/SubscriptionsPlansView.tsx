@@ -192,7 +192,7 @@ export function SubscriptionsPlansView({
           subtitle="Define structured capability entitlements instead of hardcoded tier checks across all registered tenant accounts."
         />
 
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:flex-wrap">
           {[
             ['subscriptions', 'All Subscriptions', '/admin/subscriptions'],
             ['plans', 'Entitlement Plans', '/admin/plans'],
@@ -204,7 +204,7 @@ export function SubscriptionsPlansView({
               key={id}
               href={href}
               onClick={() => setTab(id as SubscriptionsTab)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border whitespace-nowrap shrink-0 ${
                 tab === id
                   ? 'bg-slate-900 text-white border-slate-900'
                   : 'bg-white text-slate-600 border-slate-200'
@@ -215,7 +215,7 @@ export function SubscriptionsPlansView({
           ))}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <MetricCard label="Active MRR" value={`$${activeMrr.toLocaleString()}`} icon={<TrendingUp className="w-4 h-4 text-emerald-600" />} />
           <MetricCard label="Configured Plans" value={safePlans.length} icon={<Layers className="w-4 h-4" />} />
           <MetricCard label="Active Trials" value={safeSubs.filter((s) => s.status === 'TRIALING').length} icon={<Sparkles className="w-4 h-4 text-amber-600" />} />
@@ -240,7 +240,7 @@ export function SubscriptionsPlansView({
                   <p>Monthly AI Credits: <strong>{p.limits.monthlyAiCredits.toLocaleString()}</strong></p>
                   <p>Team Seats: <strong>{p.limits.maxTeamSeats}</strong> • Trial: <strong>{p.trialDays}d</strong></p>
                 </div>
-                <div className="pt-2 border-t border-slate-100 grid grid-cols-2 gap-1.5 text-[11px]">
+                <div className="pt-2 border-t border-slate-100 grid grid-cols-1 min-[360px]:grid-cols-2 gap-2 text-xs">
                   {ENTITLEMENT_KEYS.slice(0, 6).map((ek) => (
                     <div key={ek.key} className="flex items-center justify-between gap-1">
                       <span className="truncate text-slate-500">{ek.label.split(' ')[0]}</span>
@@ -357,7 +357,32 @@ export function SubscriptionsPlansView({
 
         {(tab === 'subscriptions' || tab === 'trials' || tab === 'history') && (
           <SectionPanel title={tab === 'trials' ? 'Active Trial Tenants' : 'Tenant Subscriptions Ledger'}>
-            <div className="overflow-x-auto">
+            <div className="sm:hidden space-y-2.5 text-xs">
+              {visibleSubs.map((s) => (
+                <div key={s.id} className="rounded-lg border border-slate-200 bg-white p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-mono font-bold text-slate-900 break-all">{s.id}</p>
+                      <p className="font-bold text-slate-800 truncate">{s.tenantName}</p>
+                    </div>
+                    <StatusPill status={s.status} />
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600">
+                    <span><strong className="text-slate-900">{s.planName}</strong> • ${s.amount}/{s.interval.toLowerCase()}</span>
+                    <span>{s.paymentProvider}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                    <span className="text-[11px] text-slate-500">End: {s.trialEndsAt || s.renewalDate}</span>
+                    <Link href={`/admin/subscriptions/${s.id}`}>
+                      <Button variant="outline" size="sm" className="h-7 px-2.5 text-[11px]">
+                        Inspect Lifecycle
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase text-[10px]">

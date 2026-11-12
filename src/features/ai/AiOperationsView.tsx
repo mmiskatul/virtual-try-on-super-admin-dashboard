@@ -125,7 +125,7 @@ export function AiOperationsView({
                 <div><span className="text-slate-400">Required Entitlement</span><p className="font-mono">{model.requiredEntitlement}</p></div>
                 <div><span className="text-slate-400">Garments</span><p>{model.supportedGarments.join(', ')}</p></div>
               </div>
-              <div className="flex gap-2 pt-3 border-t border-slate-100">
+              <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-100">
                 <Button size="sm" disabled={!canConfigAi} onClick={() => { toggleAiModel(model.id, !model.active); notify('Toggled model active flag.'); }}>
                   {model.active ? 'Deactivate Model' : 'Activate Model'}
                 </Button>
@@ -177,7 +177,7 @@ export function AiOperationsView({
                 </div>
               </div>
 
-              <div className="flex gap-2 pt-2">
+              <div className="flex flex-wrap gap-2 pt-2">
                 {job.status === 'FAILED' && (
                   <Button size="sm" disabled={!canConfigAi} onClick={() => { retryTryOnJob(job.id); notify(`Queued retry for ${job.id}.`); }}>
                     Retry Generation Job
@@ -219,7 +219,7 @@ export function AiOperationsView({
           subtitle="Govern multi-provider image generation APIs, GPU fallback policies, generation job failure triage, and tenant credit balances."
         />
 
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:flex-wrap">
           {[
             ['ai-overview', 'AI Overview', '/admin/ai'],
             ['providers', 'Live AI Keys & Providers', '/admin/ai/providers'],
@@ -236,7 +236,7 @@ export function AiOperationsView({
               key={id}
               href={href}
               onClick={() => setTab(id as AiOrTryOnTab)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border whitespace-nowrap shrink-0 ${
                 tab === id
                   ? 'bg-slate-900 text-white border-slate-900'
                   : 'bg-white text-slate-600 border-slate-200'
@@ -247,7 +247,7 @@ export function AiOperationsView({
           ))}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <MetricCard label="Active AI Models" value={safeModels.filter((m) => m.active).length} icon={<Cpu className="w-4 h-4 text-indigo-600" />} />
           <MetricCard label="Queue Backlog" value={queueJobs.length} icon={<Activity className="w-4 h-4 text-amber-600" />} />
           <MetricCard label="Failed Jobs Logged" value={failedJobs.length} positive={failedJobs.length === 0} icon={<XCircle className="w-4 h-4 text-rose-600" />} />
@@ -270,7 +270,7 @@ export function AiOperationsView({
                     <p className="font-bold text-slate-900">{pr.name}</p>
                     <StatusPill status={pr.status} />
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-slate-600">
+                  <div className="grid grid-cols-1 min-[360px]:grid-cols-3 gap-2 text-slate-600">
                     <div>Latency: <strong>{pr.avgLatencyMs}ms</strong></div>
                     <div>Err Rate: <strong>{pr.errorRatePct}%</strong></div>
                     <div>Est/Run: <strong>${pr.estimatedCostPerRunUsd}</strong></div>
@@ -284,7 +284,41 @@ export function AiOperationsView({
 
         {(tab === 'ai-overview' || tab === 'models') && (
           <SectionPanel title="Platform Model Registry" subtitle="Brand owners cannot bypass model restrictions enforced per subscription entitlement.">
-            <div className="overflow-x-auto">
+            <div className="sm:hidden space-y-2.5 text-xs">
+              {safeModels.map((m) => (
+                <div key={m.id} className="rounded-lg border border-slate-200 bg-white p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <Link href={`/admin/ai/models/${m.id}`} className="font-bold text-slate-900 hover:text-indigo-600 block truncate">
+                        {m.name} {m.isDefault && '(DEFAULT)'}
+                      </Link>
+                      <p className="text-[11px] font-mono text-slate-400 break-all">{m.id} • {m.version}</p>
+                    </div>
+                    <StatusPill status={m.active ? 'ACTIVE' : 'DISABLED'} />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600">
+                    <span className="uppercase font-semibold">{m.providerId}</span>
+                    <span>•</span>
+                    <span>{m.category} ({m.resolution})</span>
+                    <span>•</span>
+                    <span className="font-mono text-indigo-700">{m.requiredEntitlement}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                    <span className="font-bold text-slate-900 tabular-nums">${m.estCostUsd.toFixed(3)} / run</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={!canConfigAi}
+                      onClick={() => toggleAiModel(m.id, !m.active)}
+                      className="h-7 px-3 text-[11px]"
+                    >
+                      {m.active ? 'Disable' : 'Enable'}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase text-[10px]">
@@ -383,12 +417,12 @@ export function AiOperationsView({
               <SectionPanel className="lg:col-span-7" title="Immutable AI Credit Ledger" subtitle="Tracks promotional grants, billing purchases, consumed deductions, and released reservations.">
                 <div className="space-y-2 text-xs max-h-96 overflow-y-auto">
                   {safeLedger.map((c) => (
-                    <div key={c.id} className="p-3 rounded-lg border border-slate-200 flex items-center justify-between">
-                      <div>
-                        <p className="font-bold text-slate-900">{c.tenantName} — {c.type}</p>
-                        <p className="text-slate-500">{c.reason} • Ref: <code>{c.referenceId}</code></p>
+                    <div key={c.id} className="p-3 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-bold text-slate-900 break-words">{c.tenantName} — {c.type}</p>
+                        <p className="text-slate-500 break-words">{c.reason} • Ref: <code className="break-all">{c.referenceId}</code></p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-left sm:text-right shrink-0">
                         <p className={`font-bold ${c.delta >= 0 ? 'text-emerald-700' : 'text-slate-900'}`}>
                           {c.delta >= 0 ? `+${c.delta}` : c.delta} credits
                         </p>
@@ -419,7 +453,7 @@ export function AiOperationsView({
                       <option key={t.id} value={t.id}>{t.name} (Cap: {t.tryOnQuota})</option>
                     ))}
                   </select>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-2">
                     <select
                       value={creditType}
                       onChange={(e) => setCreditType(e.target.value as any)}
@@ -466,7 +500,46 @@ export function AiOperationsView({
               </div>
             )}
 
-            <div className="overflow-x-auto">
+            <div className="sm:hidden space-y-2.5 text-xs">
+              {(tab === 'failed' ? failedJobs : tab === 'queue' ? queueJobs : safeJobs).map((j) => (
+                <div key={j.id} className="rounded-lg border border-slate-200 bg-white p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <Link href={`/admin/try-on/jobs/${j.id}`} className="font-mono font-bold text-indigo-700 hover:underline break-all">
+                        {j.id}
+                      </Link>
+                      <p className="font-bold text-slate-900 truncate">{j.tenantName}</p>
+                      <p className="text-[11px] text-slate-500 truncate">{j.productName}</p>
+                    </div>
+                    <StatusPill status={j.status} />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600">
+                    <span className="font-mono">{j.provider} / {j.modelId}</span>
+                    <span>•</span>
+                    <span>{(j.durationMs / 1000).toFixed(2)}s</span>
+                  </div>
+                  {j.failureCategory && (
+                    <p className="text-[11px] font-medium text-rose-700 break-words">{j.failureCategory}</p>
+                  )}
+                  <div className="flex flex-wrap items-center justify-end gap-1.5 pt-2 border-t border-slate-100">
+                    {j.status === 'FAILED' && (
+                      <Button variant="outline" size="sm" disabled={!canConfigAi} onClick={() => { retryTryOnJob(j.id); notify(`Re-queued ${j.id}.`); }} className="h-7 px-2.5 text-[11px]">
+                        Retry
+                      </Button>
+                    )}
+                    {(j.status === 'QUEUED' || j.status === 'PROCESSING') && (
+                      <Button variant="ghost" size="sm" disabled={!canConfigAi} onClick={() => { cancelTryOnJob(j.id); notify(`Cancelled ${j.id}.`); }} className="h-7 px-2.5 text-[11px] text-rose-700">
+                        Cancel
+                      </Button>
+                    )}
+                    <Link href={`/admin/try-on/jobs/${j.id}`}>
+                      <Button variant="outline" size="sm" className="h-7 px-2.5 text-[11px]">Inspect</Button>
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase text-[10px]">
@@ -528,7 +601,7 @@ export function AiOperationsView({
                 <strong>Quality Engineering Standard:</strong> HTTP 200 status codes measure technical transport completion only — true garment fit fidelity requires aggregated quality-check evaluator scores and shopper retry/feedback telemetry.
               </span>
             </InlineAlert>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs pt-2">
+            <div className="grid grid-cols-1 min-[420px]:grid-cols-3 gap-3 sm:gap-4 text-xs pt-2">
               <div className="p-4 rounded-xl border border-slate-200">
                 <p className="text-slate-500">Garment Preservation Evaluator (Sample)</p>
                 <p className="text-xl font-bold text-slate-900 mt-1">91.4%</p>

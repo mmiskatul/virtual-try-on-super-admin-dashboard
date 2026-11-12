@@ -189,7 +189,7 @@ export function SubscriptionQuotas() {
         <div className="admin-card rounded-2xl p-6 space-y-3">
           <h3 className="font-bold text-base text-gray-900">Usage Ledger</h3>
           {(ledger.data || []).map((l: any) => (
-            <div key={l.id} className="p-3 rounded-xl bg-white border border-gray-200 text-xs flex items-center justify-between gap-3">
+            <div key={l.id} className="p-3 rounded-xl bg-white border border-gray-200 text-xs flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 sm:gap-3">
               <div className="min-w-0">
                 <div className="font-mono text-black truncate">{l.generationId}</div>
                 <div className="text-gray-500">{nameOf(l.tenantId)} • {l.billingPeriod} • {fmt(l.createdAt)}</div>
@@ -206,7 +206,7 @@ export function SubscriptionQuotas() {
         <div className="admin-card rounded-2xl p-6 space-y-3">
           <h3 className="font-bold text-base text-gray-900">Recent Generations</h3>
           {(jobs.data || []).map((j: any) => (
-            <div key={j.id} className="p-3 rounded-xl bg-white border border-gray-200 text-xs flex items-center justify-between gap-3">
+            <div key={j.id} className="p-3 rounded-xl bg-white border border-gray-200 text-xs flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 sm:gap-3">
               <div className="min-w-0">
                 <div className="font-mono text-black truncate">{j.id}</div>
                 <div className="text-gray-500">{nameOf(j.tenantId)} • {j.category} • {fmt(j.createdAt)}</div>

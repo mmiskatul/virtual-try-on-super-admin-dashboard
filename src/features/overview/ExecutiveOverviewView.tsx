@@ -177,7 +177,7 @@ export function ExecutiveOverviewView({
         />
 
         {/* Quick Navigation Strip for Analytics modes */}
-        <div className="flex flex-wrap gap-1.5 text-xs">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1 text-xs">
           {[
             ['Executive', '/admin'],
             ['Revenue', '/admin/analytics/revenue'],
@@ -199,7 +199,7 @@ export function ExecutiveOverviewView({
         </div>
 
         {/* 12 Executive Platform KPI Cards (Section 5A) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-3.5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-3.5">
           <MetricCard label="Total Brands" value={totalBrands} delta="+3" icon={<Building2 className="w-4 h-4" />} hint="All registered tenant workspaces" />
           <MetricCard label="Active Brands" value={activeBrands} delta="88% active" icon={<CheckCircle2 className="w-4 h-4 text-emerald-600" />} />
           <MetricCard label="Platform Users" value={safeUsers.length} delta="+14%" icon={<Users className="w-4 h-4" />} />
@@ -221,7 +221,7 @@ export function ExecutiveOverviewView({
             title="Platform Growth & Revenue Trajectory"
             subtitle="Toggle between total SaaS + GMV volume, recurring MRR, and virtual try-on compute volume (Demo historical curve)"
             right={
-              <div className="flex gap-1.5 text-xs">
+              <div className="flex flex-wrap gap-1.5 text-xs">
                 {[
                   ['revenue', 'Platform Revenue ($)'],
                   ['mrr', 'SaaS MRR ($)'],
@@ -258,25 +258,25 @@ export function ExecutiveOverviewView({
             right={<StatusPill status={isLiveBackend ? 'HEALTHY' : 'OFFLINE'} />}
           >
             <div className="space-y-2.5 text-xs">
-              <div className="flex justify-between py-1.5 border-b border-slate-100">
+              <div className="flex flex-wrap items-center justify-between gap-2 py-1.5 border-b border-slate-100">
                 <span className="text-slate-500">Backend API Connection</span>
                 <span className="font-bold text-slate-900">
                   {isLiveBackend ? 'Connected (:4000)' : 'Unauthenticated / Demo Fallback'}
                 </span>
               </div>
-              <div className="flex justify-between py-1.5 border-b border-slate-100">
+              <div className="flex flex-wrap items-center justify-between gap-2 py-1.5 border-b border-slate-100">
                 <span className="text-slate-500">Probe Roundtrip Latency</span>
                 <span className="font-mono font-bold text-slate-900">
                   {backendLatencyMs != null ? `${backendLatencyMs} ms` : 'Not probed'}
                 </span>
               </div>
-              <div className="flex justify-between py-1.5 border-b border-slate-100">
+              <div className="flex flex-wrap items-center justify-between gap-2 py-1.5 border-b border-slate-100">
                 <span className="text-slate-500">Persistence Engine</span>
                 <span className="font-semibold text-slate-800">
                   {backendHealth?.persistence || 'Not detected yet'}
                 </span>
               </div>
-              <div className="flex justify-between py-1.5 border-b border-slate-100">
+              <div className="flex flex-wrap items-center justify-between gap-2 py-1.5 border-b border-slate-100">
                 <span className="text-slate-500">Failed / Pending Jobs</span>
                 <span className="font-bold text-rose-700">
                   {safeJobs.filter((j) => j.status === 'FAILED').length} failed •{' '}
@@ -301,7 +301,7 @@ export function ExecutiveOverviewView({
           >
             <div className="space-y-2 text-xs">
               {planDistribution.map(([planName, count]) => (
-                <div key={planName} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                <div key={planName} className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg bg-slate-50 border border-slate-100">
                   <span className="font-bold text-slate-800">{planName}</span>
                   <span className="font-mono font-bold text-indigo-700">{count} tenants</span>
                 </div>
@@ -326,14 +326,14 @@ export function ExecutiveOverviewView({
             <div className="space-y-2.5 text-xs">
               {safeAlerts.map((al) => (
                 <div key={al.id} className="p-3 rounded-lg border border-slate-200 space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="font-bold text-slate-900">{al.title}</p>
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <p className="font-bold text-slate-900 min-w-0 flex-1 break-words">{al.title}</p>
                     <StatusPill status={al.severity} />
                   </div>
-                  <p className="text-slate-600">{al.details}</p>
-                  <div className="flex items-center justify-between pt-1">
+                  <p className="text-slate-600 break-words">{al.details}</p>
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                     <span className="text-[10px] text-slate-400">Owner: {al.owner || 'Unassigned'}</span>
-                    <div className="flex gap-1.5">
+                    <div className="flex flex-wrap gap-1.5">
                       {al.status !== 'RESOLVED' && (
                         <button
                           type="button"
@@ -365,10 +365,10 @@ export function ExecutiveOverviewView({
               {safeAudit.slice(0, 6).map((ev) => (
                 <div key={ev.id} className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono font-bold text-[11px] text-slate-900">{ev.action}</span>
-                    <span className="text-[10px] text-slate-400">{ev.timestamp}</span>
+                    <span className="font-mono font-bold text-[11px] text-slate-900 break-all">{ev.action}</span>
+                    <span className="text-[10px] text-slate-400 shrink-0">{ev.timestamp}</span>
                   </div>
-                  <p className="text-slate-600 mt-0.5 truncate">{ev.details}</p>
+                  <p className="text-slate-600 mt-0.5 line-clamp-2 leading-relaxed">{ev.details}</p>
                 </div>
               ))}
             </div>

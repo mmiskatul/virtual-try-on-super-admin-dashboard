@@ -10,7 +10,7 @@ interface PlatformOverviewProps {
 export function PlatformOverview({ tenants, totalGMV, totalTryOnSessions }: PlatformOverviewProps) {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-4 gap-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
         <div className="admin-card p-5 rounded-2xl">
           <p className="text-xs font-semibold text-gray-500">Total Brand Tenants</p>
           <p className="text-3xl font-black text-gray-900 mt-2">{tenants.length}</p>

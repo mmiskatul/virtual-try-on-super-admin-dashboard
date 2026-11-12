@@ -25,8 +25,8 @@ export function TenantGovernance({ tenants, onToggleStatus, onOpenAddTenant }: T
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-md">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+        <div className="relative flex-1 w-full md:max-w-md">
           <Search className="w-4 h-4 absolute left-3 top-3 text-gray-500" />
           <input
             type="text"
@@ -37,7 +37,7 @@ export function TenantGovernance({ tenants, onToggleStatus, onOpenAddTenant }: T
           />
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-semibold">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
           <button
             onClick={() => setStatusFilter('ALL')}
             className={`px-3 py-1.5 rounded-lg transition-colors ${statusFilter === 'ALL' ? 'bg-black text-white font-bold' : 'bg-white text-gray-500'}`}
@@ -67,7 +67,7 @@ export function TenantGovernance({ tenants, onToggleStatus, onOpenAddTenant }: T
         </div>
       </div>
 
-      <div className="admin-card rounded-2xl overflow-hidden border border-gray-200">
+      <div className="admin-card rounded-2xl overflow-x-auto border border-gray-200">
         <table className="w-full text-left text-xs">
           <thead className="bg-white/80 text-gray-500 border-b border-gray-200 uppercase tracking-wider text-[10px]">
             <tr>

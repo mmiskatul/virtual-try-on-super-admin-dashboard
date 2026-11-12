@@ -350,7 +350,7 @@ export function TenantGovernanceView({
               {subTab === 'overview' && (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                   <SectionPanel className="lg:col-span-6" title="Business & Owner Record" right={<StatusPill status={tenant.lifecycleStatus} />}>
-                    <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3 text-xs">
                       <div><span className="text-slate-400">Tenant ID</span><p className="font-mono font-bold">{tenant.id}</p></div>
                       <div><span className="text-slate-400">Owner</span><p className="font-bold">{tenant.owner}</p></div>
                       <div><span className="text-slate-400">Email</span><p>{tenant.email}</p></div>
@@ -371,7 +371,7 @@ export function TenantGovernanceView({
                         placeholder="Mandatory reason (e.g. Investigating ticket TKT-4821 DNS issue)"
                         className="w-full rounded-lg border border-slate-200 px-3 py-1.5"
                       />
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
                         <select
                           value={impMode}
                           onChange={(e) => setImpMode(e.target.value as any)}
@@ -397,12 +397,12 @@ export function TenantGovernanceView({
 
                   <SectionPanel className="lg:col-span-12" title="Internal Administrative Notes & Support Context">
                     <div className="space-y-3 text-xs">
-                      <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <input
                           value={noteDraft}
                           onChange={(e) => setNoteDraft(e.target.value)}
                           placeholder="Add confidential internal note (never visible to brand or customers)..."
-                          className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5"
+                          className="w-full sm:flex-1 rounded-lg border border-slate-200 px-3 py-1.5"
                         />
                         <Button
                           size="sm"
@@ -412,6 +412,7 @@ export function TenantGovernanceView({
                             setNoteDraft('');
                             notify('Added internal note.');
                           }}
+                          className="w-full sm:w-auto"
                         >
                           Add Note
                         </Button>
@@ -437,10 +438,10 @@ export function TenantGovernanceView({
                   ) : (
                     <div className="space-y-2 text-xs">
                       {tenantUsers.map((u) => (
-                        <Link key={u.id} href={`/admin/users/${u.id}`} className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:bg-slate-50">
-                          <div>
-                            <p className="font-bold text-slate-900">{u.name} ({u.roleLabel})</p>
-                            <p className="text-slate-500">{u.email}</p>
+                        <Link key={u.id} href={`/admin/users/${u.id}`} className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg border border-slate-200 hover:bg-slate-50">
+                          <div className="min-w-0">
+                            <p className="font-bold text-slate-900 truncate">{u.name} ({u.roleLabel})</p>
+                            <p className="text-slate-500 break-all">{u.email}</p>
                           </div>
                           <StatusPill status={u.status} />
                         </Link>
@@ -481,7 +482,7 @@ export function TenantGovernanceView({
                       </select>
                     </div>
                     {tenantInvoices.map((inv) => (
-                      <div key={inv.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-200">
+                      <div key={inv.id} className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg border border-slate-200">
                         <span className="font-mono font-bold">{inv.id} ({inv.period})</span>
                         <span>${inv.total} USD</span>
                         <StatusPill status={inv.status} />
@@ -541,13 +542,13 @@ export function TenantGovernanceView({
                 <SectionPanel title="Chronological Tenant Event Timeline">
                   <div className="space-y-2.5 text-xs">
                     {tenant.timeline.map((ev, i) => (
-                      <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100">
+                      <div key={i} className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg bg-slate-50 border border-slate-100">
                         <span className="font-semibold text-slate-900">{ev.label}</span>
                         <span className="text-slate-400">{ev.at}</span>
                       </div>
                     ))}
                     {tenantAudit.map((a) => (
-                      <div key={a.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-200">
+                      <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg border border-slate-200">
                         <span><strong>{a.action}</strong>: {a.details}</span>
                         <span className="text-slate-400">{a.timestamp}</span>
                       </div>
@@ -685,8 +686,8 @@ export function TenantGovernanceView({
           title="Tenant Organizations"
           subtitle="Click any tenant to open its isolated detail workspace, usage limits, or start a controlled view-as session."
           right={
-            <div className="flex flex-wrap gap-2">
-              <div className="relative w-56">
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+              <div className="relative w-full sm:w-56">
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   value={search}
@@ -698,7 +699,7 @@ export function TenantGovernanceView({
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs bg-white font-semibold"
+                className="flex-1 sm:flex-none min-w-0 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs bg-white font-semibold"
               >
                 <option value="ALL">All Lifecycle</option>
                 <option value="ACTIVE">Active</option>
@@ -711,7 +712,7 @@ export function TenantGovernanceView({
               <select
                 value={planFilter}
                 onChange={(e) => setPlanFilter(e.target.value)}
-                className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs bg-white font-semibold"
+                className="flex-1 sm:flex-none min-w-0 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs bg-white font-semibold"
               >
                 <option value="ALL">All Plans</option>
                 <option value="FREE">Free</option>
@@ -726,7 +727,90 @@ export function TenantGovernanceView({
           {filteredTenants.length === 0 ? (
             <EmptyPanel title="No matching tenants" description="Adjust lifecycle or plan filters to inspect brand tenants." />
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              <div className="sm:hidden space-y-2.5 text-xs">
+                {filteredTenants.map((t) => {
+                  const pct = Math.min(100, Math.round((t.tryOnUsed / Math.max(1, t.tryOnQuota)) * 100));
+                  return (
+                    <div key={t.id} className="rounded-lg border border-slate-200 bg-white p-3 space-y-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <Link href={`/admin/tenants/${t.id}`} className="font-bold text-slate-900 hover:text-indigo-600 block truncate">
+                            {t.name}
+                          </Link>
+                          <p className="text-[11px] font-mono text-slate-400 break-all">
+                            /{t.slug} • {t.id}
+                          </p>
+                        </div>
+                        <StatusPill status={t.lifecycleStatus} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-slate-100">
+                        <div className="min-w-0">
+                          <span className="text-slate-400 block">Owner</span>
+                          <span className="font-semibold text-slate-800 block truncate">{t.owner}</span>
+                          <span className="text-slate-400 block truncate">{t.email}</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-slate-400 block">Plan & GMV</span>
+                          <span className="font-bold text-slate-900 block">{t.plan} (${t.monthlySpend}/mo)</span>
+                          <span className="text-slate-600 font-semibold tabular-nums">GMV ${t.gmv.toLocaleString()}</span>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-slate-500">AI Credits: <strong className="text-slate-800">{t.tryOnUsed.toLocaleString()} / {t.tryOnQuota.toLocaleString()}</strong></span>
+                          <span className="text-slate-500">{t.productsCount} SKUs / {t.marketplacePublishedCount} pub</span>
+                        </div>
+                        <div className="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${pct > 90 ? 'bg-rose-500' : 'bg-indigo-600'}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
+                        <Link href={`/admin/tenants/${t.id}`} className="flex-1">
+                          <Button variant="outline" size="sm" className="w-full h-8 text-[11px]">
+                            Inspect
+                          </Button>
+                        </Link>
+                        {t.status === 'ACTIVE' ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={!canSuspend}
+                            onClick={() =>
+                              setConfirmModal({
+                                title: `Suspend ${t.name}?`,
+                                description: 'Disables storefront and try-on inference immediately. Preserves data per retention policy.',
+                                confirmLabel: 'Suspend',
+                                onRun: (r) => {
+                                  handleLifecycleChange(t.id, 'SUSPENDED', r);
+                                  setConfirmModal(null);
+                                },
+                              })
+                            }
+                            className="h-8 px-3 text-[11px] text-rose-700"
+                          >
+                            Suspend
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={!canEdit}
+                            onClick={() => handleLifecycleChange(t.id, 'ACTIVE', 'Approved/Reactivated by Admin')}
+                            className="h-8 px-3 text-[11px] text-emerald-700"
+                          >
+                            Activate
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase text-[10px]">
@@ -824,7 +908,8 @@ export function TenantGovernanceView({
                   })}
                 </tbody>
               </table>
-            </div>
+              </div>
+            </>
           )}
         </SectionPanel>
 

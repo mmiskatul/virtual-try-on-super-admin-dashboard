@@ -83,7 +83,7 @@ export function FinanceBillingView({
           subtitle="Audit Stripe / SSLCommerz / bKash billing settlements, process authorized refunds, and resolve provider webhook exceptions."
         />
 
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:flex-wrap">
           {[
             ['overview', 'Financial Overview', '/admin/finance'],
             ['transactions', 'Transactions', '/admin/finance/transactions'],
@@ -96,7 +96,7 @@ export function FinanceBillingView({
               key={id}
               href={href}
               onClick={() => setTab(id as FinanceTab)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border whitespace-nowrap shrink-0 ${
                 tab === id
                   ? 'bg-slate-900 text-white border-slate-900'
                   : 'bg-white text-slate-600 border-slate-200'
@@ -113,7 +113,7 @@ export function FinanceBillingView({
           </span>
         </InlineAlert>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <MetricCard label="Settled Sample Revenue" value={`$${gross.toFixed(2)}`} icon={<DollarSign className="w-4 h-4 text-emerald-600" />} />
           <MetricCard label="Net Settled" value={`$${net.toFixed(2)}`} icon={<CreditCard className="w-4 h-4 text-indigo-600" />} />
           <MetricCard label="Failed Payments" value={failedCount} positive={failedCount === 0} icon={<AlertCircle className="w-4 h-4 text-rose-600" />} />
@@ -122,7 +122,32 @@ export function FinanceBillingView({
 
         {(tab === 'overview' || tab === 'payments' || tab === 'transactions' || tab === 'failed-payments') && (
           <SectionPanel title={tab === 'failed-payments' ? 'Failed Payment Incidents' : 'Payment Transactions Ledger'}>
-            <div className="overflow-x-auto">
+            <div className="sm:hidden space-y-2.5 text-xs">
+              {(tab === 'failed-payments' ? safeTx.filter((t) => t.status === 'FAILED') : safeTx).map((t) => (
+                <div key={t.id} className="rounded-lg border border-slate-200 bg-white p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-mono font-bold text-slate-900 break-all">{t.id}</p>
+                      <p className="font-bold text-slate-800 truncate">{t.tenantName}</p>
+                    </div>
+                    <span className="font-extrabold text-slate-950 tabular-nums shrink-0">${t.amount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+                    <span>{t.type.replace('_', ' ')}</span>
+                    <span>•</span>
+                    <span className="font-mono break-all">{t.provider} • {t.providerRef}</span>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-100">
+                    <StatusPill status={t.status} />
+                    <span className="text-[11px] text-slate-500">{t.createdAt}</span>
+                  </div>
+                  {t.failureReason && (
+                    <p className="text-[11px] text-rose-700 font-medium break-words">{t.failureReason}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase text-[10px]">
@@ -160,12 +185,12 @@ export function FinanceBillingView({
           <SectionPanel title="Platform Subscription Invoices">
             <div className="space-y-2 text-xs">
               {safeInv.map((inv) => (
-                <div key={inv.id} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border border-slate-200">
-                  <div>
-                    <p className="font-mono font-bold text-slate-900">{inv.id} — {inv.tenantName}</p>
-                    <p className="text-slate-500">Period: {inv.period} • Tax: ${inv.taxAmount} • Due {inv.dueDate}</p>
+                <div key={inv.id} className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 p-3 rounded-lg border border-slate-200">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-mono font-bold text-slate-900 break-words">{inv.id} — {inv.tenantName}</p>
+                    <p className="text-slate-500 break-words">Period: {inv.period} • Tax: ${inv.taxAmount} • Due {inv.dueDate}</p>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
                     <span className="font-bold text-slate-900">${inv.total.toFixed(2)} {inv.currency}</span>
                     <StatusPill status={inv.status} />
                     <Button
@@ -195,12 +220,12 @@ export function FinanceBillingView({
           <SectionPanel title="Refund Approval & Provider Confirmation Queue" subtitle="Never marked completed until payment gateway confirms settlement.">
             <div className="space-y-2 text-xs">
               {safeRefunds.map((r) => (
-                <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border border-slate-200">
-                  <div>
-                    <p className="font-bold text-slate-900">{r.id} ({r.transactionId}) — {r.tenantName}</p>
-                    <p className="text-slate-500">{r.reason} • Requested by {r.requestedBy}</p>
+                <div key={r.id} className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 p-3 rounded-lg border border-slate-200">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-slate-900 break-words">{r.id} ({r.transactionId}) — {r.tenantName}</p>
+                    <p className="text-slate-500 break-words">{r.reason} • Requested by {r.requestedBy}</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
                     <span className="font-bold text-slate-900">${r.amount.toFixed(2)}</span>
                     <StatusPill status={r.status} />
                     {r.status === 'REQUESTED' && (
@@ -224,12 +249,12 @@ export function FinanceBillingView({
           <SectionPanel title="Billing Reconciliation Exceptions" subtitle="Track webhook gaps and settlement amount mismatches.">
             <div className="space-y-2 text-xs">
               {safeRecon.map((rec) => (
-                <div key={rec.id} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border border-slate-200">
-                  <div>
-                    <p className="font-bold text-slate-900">{rec.id} — {rec.provider} ({rec.type})</p>
-                    <p className="text-slate-500">{rec.notes} • Expected ${rec.expectedAmount}, Provider ${rec.providerAmount}</p>
+                <div key={rec.id} className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 p-3 rounded-lg border border-slate-200">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-slate-900 break-words">{rec.id} — {rec.provider} ({rec.type})</p>
+                    <p className="text-slate-500 break-words">{rec.notes} • Expected ${rec.expectedAmount}, Provider ${rec.providerAmount}</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
                     <StatusPill status={rec.status} />
                     {rec.status !== 'RESOLVED' && (
                       <Button

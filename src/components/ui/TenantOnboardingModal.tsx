@@ -91,7 +91,7 @@ export function TenantOnboardingModal({ isOpen, onClose, onAddTenant }: TenantOn
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-gray-700 font-medium mb-1">Owner / Primary Contact *</label>
               <Input
@@ -117,7 +117,7 @@ export function TenantOnboardingModal({ isOpen, onClose, onAddTenant }: TenantOn
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-gray-700 font-medium mb-1">Subscription Plan Tier *</label>
               <select

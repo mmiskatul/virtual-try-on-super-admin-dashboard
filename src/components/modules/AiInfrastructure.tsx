@@ -219,7 +219,7 @@ export function AiInfrastructure() {
 
       {/* Primary Engine Selector */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-3">
           <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
             <Layers className="w-4 h-4 text-black" /> Active Primary Neural Engine
           </h3>

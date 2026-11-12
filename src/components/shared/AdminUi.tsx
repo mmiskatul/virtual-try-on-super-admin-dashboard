@@ -101,21 +101,21 @@ export function AdminPageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-3 border-b border-slate-200">
-      <div className="space-y-1">
+    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 pb-3 border-b border-slate-200">
+      <div className="space-y-1 min-w-0">
         {eyebrow && (
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-indigo-600">
             {eyebrow}
           </p>
         )}
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
+        <h1 className="text-xl sm:text-2xl lg:text-[26px] font-bold tracking-tight text-slate-900 leading-tight break-words">
           {title}
         </h1>
         {subtitle && (
-          <p className="text-xs sm:text-sm text-slate-500 max-w-3xl">{subtitle}</p>
+          <p className="text-xs sm:text-sm text-slate-500 max-w-3xl leading-relaxed">{subtitle}</p>
         )}
       </div>
-      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+      {actions && <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">{actions}</div>}
     </div>
   );
 }
@@ -135,19 +135,19 @@ export function SectionPanel({
 }) {
   return (
     <section
-      className={`rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4 shadow-sm ${className}`}
+      className={`rounded-xl border border-slate-200 bg-white p-3.5 sm:p-5 space-y-3 sm:space-y-4 shadow-sm ${className}`}
     >
       {(title || right) && (
-        <div className="flex flex-wrap items-start justify-between gap-3 pb-3 border-b border-slate-100">
-          <div>
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5 sm:gap-3 pb-3 border-b border-slate-100">
+          <div className="min-w-0">
             {title && (
-              <h2 className="text-sm font-bold text-slate-900">{title}</h2>
+              <h2 className="text-sm sm:text-base font-bold text-slate-900 break-words">{title}</h2>
             )}
             {subtitle && (
-              <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>
+              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{subtitle}</p>
             )}
           </div>
-          {right}
+          {right && <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0">{right}</div>}
         </div>
       )}
       {children}
@@ -170,26 +170,34 @@ export function MetricCard({
   hint?: string;
   icon?: React.ReactNode;
 }) {
+  const [showHint, setShowHint] = React.useState(false);
+
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2 shadow-sm hover:border-slate-300 transition-colors">
+    <div className="rounded-xl border border-slate-200 bg-white p-3 sm:p-4 space-y-1.5 sm:space-y-2 shadow-sm hover:border-slate-300 transition-colors min-w-0">
       <div className="flex items-start justify-between gap-2">
-        <span className="text-xs font-semibold text-slate-500 flex items-center gap-1">
-          {label}
+        <span className="text-[11px] sm:text-xs font-semibold text-slate-500 flex flex-wrap items-center gap-1 min-w-0">
+          <span className="truncate">{label}</span>
           {hint && (
-            <span title={hint} className="text-slate-400 cursor-help">
+            <button
+              type="button"
+              onClick={() => setShowHint((v) => !v)}
+              title={hint}
+              aria-label={hint}
+              className="text-slate-400 hover:text-slate-700 cursor-pointer shrink-0"
+            >
               <Info className="w-3.5 h-3.5" />
-            </span>
+            </button>
           )}
         </span>
         {icon && (
-          <div className="p-1.5 rounded-lg bg-slate-100 text-slate-700">{icon}</div>
+          <div className="p-1.5 rounded-lg bg-slate-100 text-slate-700 shrink-0">{icon}</div>
         )}
       </div>
-      <p className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
+      <p className="text-lg sm:text-2xl font-bold tracking-tight text-slate-900 tabular-nums break-words">
         {value}
       </p>
       {delta && (
-        <div className="flex items-center gap-1 text-[11px]">
+        <div className="flex flex-wrap items-center gap-1 text-[11px]">
           <span
             className={`inline-flex items-center font-bold ${
               positive ? 'text-emerald-600' : 'text-rose-600'
@@ -204,6 +212,11 @@ export function MetricCard({
           </span>
           <span className="text-slate-400">vs prior 30d</span>
         </div>
+      )}
+      {hint && showHint && (
+        <p className="text-[10px] text-slate-500 leading-snug pt-1 border-t border-slate-100">
+          {hint}
+        </p>
       )}
     </div>
   );
@@ -385,10 +398,11 @@ export function SvgTrendChart({
   const max = Math.max(1, ...data.map((d) => Number(d[valueKey] || 0)));
 
   return (
-    <div
-      className="grid gap-3 items-end h-44 pt-4"
-      style={{ gridTemplateColumns: `repeat(${data.length}, minmax(0, 1fr))` }}
-    >
+    <div className="overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
+      <div
+        className="grid gap-2.5 sm:gap-3 items-end h-44 pt-4 min-w-full"
+        style={{ gridTemplateColumns: `repeat(${Math.max(data.length, 1)}, minmax(44px, 1fr))` }}
+      >
       {data.map((d, idx) => {
         const val = Number(d[valueKey] || 0);
         const pct = Math.max(6, Math.round((val / max) * 100));
@@ -408,6 +422,7 @@ export function SvgTrendChart({
           </div>
         );
       })}
+      </div>
     </div>
   );
 }

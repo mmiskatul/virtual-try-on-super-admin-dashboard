@@ -160,7 +160,7 @@ export function SystemSecurityGovernanceView({
         />
 
         {/* Quick Context Tabs */}
-        <div className="flex flex-wrap gap-1.5 text-xs">
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:flex-wrap text-xs">
           {[
             ['Health & SMTP/DB', '/admin/system/health'],
             ['Queues & Jobs', '/admin/system/queues'],
@@ -176,7 +176,7 @@ export function SystemSecurityGovernanceView({
             <Link
               key={href}
               href={href}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 font-semibold text-slate-700"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 font-semibold text-slate-700 whitespace-nowrap shrink-0"
             >
               {lbl}
             </Link>
@@ -186,7 +186,7 @@ export function SystemSecurityGovernanceView({
         {/* SYSTEM OPERATIONS & LIVE DB/SMTP INFRASTRUCTURE */}
         {gateModule === 'system' && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <MetricCard label="Backend :4000 Probe" value={isLiveBackend ? 'HEALTHY' : 'DEMO / AUTH REQUIRED'} icon={<Server className="w-4 h-4 text-emerald-600" />} />
               <MetricCard label="Probe Latency" value={backendLatencyMs != null ? `${backendLatencyMs} ms` : 'Unprobed'} icon={<Activity className="w-4 h-4" />} />
               <MetricCard label="Persistence Layer" value={backendHealth?.persistence || 'In-Memory / Demo'} icon={<Database className="w-4 h-4 text-indigo-600" />} />
@@ -201,14 +201,14 @@ export function SystemSecurityGovernanceView({
 
             {(tab === 'queues' || tab === 'jobs' || tab === 'logs') && (
               <SectionPanel title="Masked Application Logs & Background Workers" subtitle="PII tokens, passwords, and API secrets are redacted automatically.">
-                <div className="space-y-2 font-mono text-[11px]">
-                  <div className="p-2.5 rounded bg-slate-900 text-emerald-400">
+                <div className="space-y-2 font-mono text-[11px] overflow-x-auto">
+                  <div className="p-2.5 rounded bg-slate-900 text-emerald-400 break-all">
                     [INFO] service=vton-backend req_id=corr_8841 path=/health status=200 latency={backendLatencyMs ?? 12}ms
                   </div>
-                  <div className="p-2.5 rounded bg-slate-900 text-amber-300">
+                  <div className="p-2.5 rounded bg-slate-900 text-amber-300 break-all">
                     [WARN] service=webhook-worker event=invoice.payment_failed target=stripe status=retrying tenant=tenant_012
                   </div>
-                  <div className="p-2.5 rounded bg-slate-900 text-slate-300">
+                  <div className="p-2.5 rounded bg-slate-900 text-slate-300 break-all">
                     [AUDIT] service=auth-guard masked_actor=ad***@vton-platform.io role=SUPER_ADMIN cross_tenant_check=ENFORCED
                   </div>
                 </div>
@@ -281,12 +281,12 @@ export function SystemSecurityGovernanceView({
             <SectionPanel title="Security Intrusion & Isolation Events">
               <div className="space-y-2 text-xs">
                 {safeSecurity.map((ev) => (
-                  <div key={ev.id} className="p-3.5 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="font-bold text-slate-900">{ev.type} — {ev.actor} (IP {ev.ipMasked})</p>
-                      <p className="text-slate-600">{ev.details} • {ev.timestamp}</p>
+                  <div key={ev.id} className="p-3 sm:p-3.5 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-slate-900 break-words">{ev.type} — {ev.actor} (IP {ev.ipMasked})</p>
+                      <p className="text-slate-600 break-words">{ev.details} • {ev.timestamp}</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
                       <StatusPill status={ev.severity} />
                       <StatusPill status={ev.status} />
                       {ev.status === 'OPEN' && (
@@ -332,15 +332,15 @@ export function SystemSecurityGovernanceView({
             >
               <div className="space-y-2 text-xs max-h-96 overflow-y-auto">
                 {safeAudit.map((a) => (
-                  <div key={a.id} className="p-3 rounded-lg bg-slate-50 border border-slate-100 flex flex-wrap justify-between gap-2">
-                    <div>
-                      <span className="font-mono font-bold text-slate-900">{a.action}</span>
+                  <div key={a.id} className="p-3 rounded-lg bg-slate-50 border border-slate-100 flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <span className="font-mono font-bold text-slate-900 break-all">{a.action}</span>
                       <span className="text-slate-500"> &rarr; {a.target}</span>
-                      <p className="text-slate-600 mt-0.5">{a.details} {a.reason && `(Reason: ${a.reason})`}</p>
+                      <p className="text-slate-600 mt-0.5 break-words">{a.details} {a.reason && `(Reason: ${a.reason})`}</p>
                     </div>
-                    <div className="text-right text-[11px] text-slate-400">
+                    <div className="text-left sm:text-right text-[11px] text-slate-400 shrink-0">
                       <p className="font-semibold text-slate-700">{a.actor} ({a.actorRole})</p>
-                      <p className="font-mono">{a.correlationId} • {a.timestamp}</p>
+                      <p className="font-mono break-all">{a.correlationId} • {a.timestamp}</p>
                     </div>
                   </div>
                 ))}
@@ -357,12 +357,12 @@ export function SystemSecurityGovernanceView({
             </InlineAlert>
             <div className="space-y-2 text-xs pt-2">
               {safeGov.map((r) => (
-                <div key={r.id} className="p-3.5 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="font-bold text-slate-900">{r.id} — {r.type.replace('_', ' ')} ({r.tenantName})</p>
-                    <p className="text-slate-500">Requester: {r.requester} • Retention Deadline: {r.retentionDeadline}</p>
+                <div key={r.id} className="p-3 sm:p-3.5 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-slate-900 break-words">{r.id} — {r.type.replace('_', ' ')} ({r.tenantName})</p>
+                    <p className="text-slate-500 break-words">Requester: {r.requester} • Retention Deadline: {r.retentionDeadline}</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
                     <StatusPill status={r.status} />
                     {r.status !== 'COMPLETED' && (
                       <Button size="sm" variant="outline" onClick={() => { updateDataRequest(r.id, 'COMPLETED'); notify(`Completed governance request ${r.id}.`); }}>
@@ -387,7 +387,7 @@ export function SystemSecurityGovernanceView({
 
             <SectionPanel title="Platform Event Webhooks & Retry Monitor">
               <form
-                className="flex gap-2 pb-2"
+                className="flex flex-col sm:flex-row gap-2 pb-2"
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (!whUrl.trim()) return;
@@ -396,17 +396,17 @@ export function SystemSecurityGovernanceView({
                   notify('Registered webhook endpoint.');
                 }}
               >
-                <input type="url" required value={whUrl} onChange={(e) => setWhUrl(e.target.value)} placeholder="https://ops-alerts.yourcompany.io/webhook" className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-mono" />
-                <Button type="submit" size="sm">Add Webhook</Button>
+                <input type="url" required value={whUrl} onChange={(e) => setWhUrl(e.target.value)} placeholder="https://ops-alerts.yourcompany.io/webhook" className="w-full sm:flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-mono" />
+                <Button type="submit" size="sm" className="w-full sm:w-auto">Add Webhook</Button>
               </form>
               <div className="space-y-2 text-xs">
                 {safeHooks.map((w) => (
                   <div key={w.id} className="p-3 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <p className="font-mono font-bold text-slate-900">{w.url}</p>
-                      <p className="text-slate-500">{w.events.join(', ')} • Retries: {w.retryCount} • {w.lastAttemptAt}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-mono font-bold text-slate-900 break-all">{w.url}</p>
+                      <p className="text-slate-500 break-words">{w.events.join(', ')} • Retries: {w.retryCount} • {w.lastAttemptAt}</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
                       <StatusPill status={String(w.lastResponseCode)} />
                       <Button size="sm" variant="outline" onClick={() => { retryWebhook(w.id); notify('Queued webhook redelivery.'); }}>
                         Retry
@@ -425,15 +425,15 @@ export function SystemSecurityGovernanceView({
             <SectionPanel title="Platform Feature Flags & Staged Rollout" subtitle="Controlled global feature activation without scattering plan checks.">
               <div className="space-y-3 text-xs">
                 {safeFlags.map((fl) => (
-                  <div key={fl.key} className="p-4 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
+                  <div key={fl.key} className="p-3.5 sm:p-4 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
                         <p className="font-bold text-slate-900">{fl.name}</p>
-                        <code className="text-[11px] bg-slate-100 px-1.5 py-0.5 rounded">{fl.key}</code>
+                        <code className="text-[11px] bg-slate-100 px-1.5 py-0.5 rounded break-all">{fl.key}</code>
                       </div>
-                      <p className="text-slate-500 mt-0.5">{fl.description} • Owner: {fl.owner} • Rollout: {fl.rolloutPct}%</p>
+                      <p className="text-slate-500 mt-0.5 break-words">{fl.description} • Owner: {fl.owner} • Rollout: {fl.rolloutPct}%</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
                       <StatusPill status={fl.globalEnabled ? 'ENABLED' : 'DISABLED'} />
                       <Button
                         size="sm"
