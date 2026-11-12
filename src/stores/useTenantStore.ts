@@ -1,29 +1,19 @@
-import { create } from 'zustand';
 import { TenantItem } from '../types';
-import { INITIAL_TENANTS } from '../lib/mock_data';
+import { store } from '../store';
+import { createSliceFacadeHook } from '../store/hooks';
+import { selectTenantState } from '../store/selectors';
+import { tenantActions } from '../store/slices/legacyAdminSlices';
 
-interface TenantState {
-  items: TenantItem[];
-  setTenants: (tenants: TenantItem[]) => void;
-  toggleTenantStatus: (tenantId: string) => void;
-  updateQuota: (payload: { tenantId: string; quota: number }) => void;
-}
+const tenantBoundActions = {
+  setTenants: (tenants: TenantItem[]) => {
+    store.dispatch(tenantActions.setTenants(tenants));
+  },
+  toggleTenantStatus: (tenantId: string) => {
+    store.dispatch(tenantActions.toggleTenantStatus(tenantId));
+  },
+  updateQuota: (payload: { tenantId: string; quota: number }) => {
+    store.dispatch(tenantActions.updateQuota(payload));
+  },
+};
 
-export const useTenantStore = create<TenantState>((set) => ({
-  items: INITIAL_TENANTS,
-  setTenants: (items) => set({ items }),
-  toggleTenantStatus: (tenantId) =>
-    set((state) => ({
-      items: state.items.map((t) =>
-        t.id === tenantId
-          ? { ...t, status: t.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE' }
-          : t
-      )
-    })),
-  updateQuota: ({ tenantId, quota }) =>
-    set((state) => ({
-      items: state.items.map((t) =>
-        t.id === tenantId ? { ...t, tryOnQuota: quota } : t
-      )
-    }))
-}));
+export const useTenantStore = createSliceFacadeHook(selectTenantState, tenantBoundActions);

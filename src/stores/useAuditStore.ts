@@ -1,15 +1,16 @@
-import { create } from 'zustand';
 import { AuditLog } from '../types';
-import { INITIAL_AUDIT_LOGS } from '../lib/mock_data';
+import { store } from '../store';
+import { createSliceFacadeHook } from '../store/hooks';
+import { selectAuditState } from '../store/selectors';
+import { auditActions } from '../store/slices/legacyAdminSlices';
 
-interface AuditState {
-  logs: AuditLog[];
-  setLogs: (logs: AuditLog[]) => void;
-  addAuditLog: (log: AuditLog) => void;
-}
+const auditBoundActions = {
+  setLogs: (logs: AuditLog[]) => {
+    store.dispatch(auditActions.setLogs(logs));
+  },
+  addAuditLog: (log: AuditLog) => {
+    store.dispatch(auditActions.addAuditLog(log));
+  },
+};
 
-export const useAuditStore = create<AuditState>((set) => ({
-  logs: INITIAL_AUDIT_LOGS,
-  setLogs: (logs) => set({ logs }),
-  addAuditLog: (log) => set((state) => ({ logs: [log, ...state.logs] }))
-}));
+export const useAuditStore = createSliceFacadeHook(selectAuditState, auditBoundActions);

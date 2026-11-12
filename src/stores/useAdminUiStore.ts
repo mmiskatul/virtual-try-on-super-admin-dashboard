@@ -1,18 +1,19 @@
-import { create } from 'zustand';
 import { AdminTab } from '../types';
+import { store } from '../store';
+import { createSliceFacadeHook } from '../store/hooks';
+import { selectAdminUiState } from '../store/selectors';
+import { adminUiActions } from '../store/slices/legacyAdminSlices';
 
-interface AdminUiState {
-  activeTab: AdminTab;
-  toastMessage: string | null;
-  setActiveTab: (tab: AdminTab) => void;
-  showToast: (message: string) => void;
-  hideToast: () => void;
-}
+const adminUiBoundActions = {
+  setActiveTab: (tab: AdminTab) => {
+    store.dispatch(adminUiActions.setActiveTab(tab));
+  },
+  showToast: (message: string) => {
+    store.dispatch(adminUiActions.showToast(message));
+  },
+  hideToast: () => {
+    store.dispatch(adminUiActions.hideToast());
+  },
+};
 
-export const useAdminUiStore = create<AdminUiState>((set) => ({
-  activeTab: 'overview',
-  toastMessage: null,
-  setActiveTab: (activeTab) => set({ activeTab }),
-  showToast: (toastMessage) => set({ toastMessage }),
-  hideToast: () => set({ toastMessage: null })
-}));
+export const useAdminUiStore = createSliceFacadeHook(selectAdminUiState, adminUiBoundActions);
