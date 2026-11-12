@@ -1,16 +1,14 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import { isAllowedAdminRole } from './portal-auth';
 
 const BACKEND_API_URL =
   process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:4000';
+const useSecureNextAuthCookies = Boolean(process.env.NEXTAUTH_URL?.startsWith('https://'));
 
-const PLATFORM_ADMIN_ROLES = new Set([
-  'SUPER_ADMIN',
-  'PLATFORM_OPS',
-  'SUPPORT_AGENT',
-  'BILLING_ADMIN',
-  'TRUST_SAFETY',
-]);
+const PLATFORM_ADMIN_ROLES = {
+  has: (role: string) => isAllowedAdminRole(role),
+};
 
 function readCookieHeader(req: any): string | undefined {
   const headers = req?.headers;
@@ -115,6 +113,20 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt',
     maxAge: 24 * 60 * 60 // 24 hours
+  },
+  useSecureCookies: useSecureNextAuthCookies,
+  cookies: {
+    sessionToken: {
+      name: useSecureNextAuthCookies
+        ? '__Secure-next-auth.session-token'
+        : 'next-auth.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: useSecureNextAuthCookies,
+      },
+    },
   },
   callbacks: {
     async jwt({ token, user }) {

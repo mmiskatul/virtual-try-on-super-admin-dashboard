@@ -130,7 +130,11 @@ export const superAdminApi = {
   },
 
   verifyEmail: (payload: { token?: string; email?: string; code?: string }) => {
-    return request<{ message: string; user: any }>(`${BACKEND_API_URL}/api/v1/admin/auth/verify-email`, {
+    return request<{
+      message: string;
+      user: any;
+      sessionId?: string;
+    }>(`${BACKEND_API_URL}/api/v1/admin/auth/verify-email`, {
       method: 'POST',
       body: JSON.stringify(payload)
     });

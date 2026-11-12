@@ -3,6 +3,7 @@
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { signIn, getSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CheckCircle2, AlertCircle, Loader2, Mail, ShieldCheck, ArrowRight } from 'lucide-react';
@@ -41,6 +42,26 @@ function AdminVerifyEmailContent() {
     return () => clearTimeout(t);
   }, [cooldown]);
 
+  const completeVerifiedSession = async (verifiedEmail: string): Promise<boolean> => {
+    try {
+      const signInResult = await signIn('credentials', {
+        redirect: false,
+        email: verifiedEmail,
+        password: '',
+      });
+      if (signInResult?.error) {
+        return false;
+      }
+      await getSession();
+      if (typeof window !== 'undefined') {
+        window.location.assign('/admin');
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   useEffect(() => {
     if (!urlToken || attemptedAutoToken.current) return;
     attemptedAutoToken.current = true;
@@ -48,15 +69,19 @@ function AdminVerifyEmailContent() {
 
     superAdminApi
       .verifyEmail({ token: urlToken })
-      .then((res) => {
+      .then(async (res) => {
+        const verifiedEmail = res?.user?.email || urlEmail;
         setStatus('verified');
         setMessage(res.message);
+        if (verifiedEmail) {
+          await completeVerifiedSession(verifiedEmail);
+        }
       })
       .catch((err: any) => {
         setStatus('error');
         setMessage(err?.message || 'Verification link is invalid or has expired.');
       });
-  }, [urlToken]);
+  }, [urlToken, urlEmail]);
 
   const onSubmitCode = async (data: VerifyEmailFormValues) => {
     setMessage(null);
@@ -64,6 +89,7 @@ function AdminVerifyEmailContent() {
       const res = await superAdminApi.verifyEmail({ email: data.email, code: data.code });
       setStatus('verified');
       setMessage(res.message);
+      await completeVerifiedSession(res?.user?.email || data.email);
     } catch (err: any) {
       setStatus('error');
       setMessage(err?.message || 'Invalid or expired verification code.');
@@ -119,10 +145,10 @@ function AdminVerifyEmailContent() {
           </div>
         </div>
         <Link
-          href={`/login?verified=1${urlEmail ? `&email=${encodeURIComponent(urlEmail)}` : ''}`}
+          href="/admin"
           className="w-full h-10 px-4 rounded-xl bg-black hover:bg-gray-800 text-white font-bold text-xs inline-flex items-center justify-center gap-2 transition-all"
         >
-          <span>Continue to Sign In</span>
+          <span>Continue to Super Admin Dashboard</span>
           <ArrowRight className="w-4 h-4" />
         </Link>
       </AuthShell>

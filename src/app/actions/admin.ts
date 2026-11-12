@@ -1,6 +1,7 @@
 'use server';
 
 import { getTaintedAdminRecord, sanitizeAdminToDTO, PublicAdminDTO } from '@/lib/server-admin';
+import { requireAdminServerAction } from '@/lib/server-auth';
 
 /**
  * Server Action: Safely retrieve super-admin profile.
@@ -13,6 +14,7 @@ export async function fetchAdminProfile(adminId: string = 'adm_master_01'): Prom
   error?: string;
 }> {
   try {
+    await requireAdminServerAction();
     const rawTaintedAdmin = await getTaintedAdminRecord(adminId);
 
     // Secure DTO Sanitization: Strips rootSigningKey, twoFactorSecret, vaultEncryptionNonce

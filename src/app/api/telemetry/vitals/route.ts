@@ -1,6 +1,15 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 import { trace } from '@opentelemetry/api';
+import {
+  ADMIN_ACCESS_COOKIE,
+  ADMIN_REFRESH_COOKIE,
+  ADMIN_SESSION_COOKIE,
+  isAllowedAdminRole,
+  isValidAdminAccessCookie,
+  isValidAdminRefreshCookie,
+} from '@/lib/portal-auth';
 
 export const runtime = 'edge';
 
@@ -10,6 +19,24 @@ export const runtime = 'edge';
  * and correlates them into OpenTelemetry spans for Datadog RUM / New Relic observability.
  */
 export async function POST(request: NextRequest) {
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+  const userId = typeof token?.id === 'string' ? token.id : typeof token?.sub === 'string' ? token.sub : '';
+  const accessToken = request.cookies.get(ADMIN_ACCESS_COOKIE)?.value;
+  const refreshToken = request.cookies.get(ADMIN_REFRESH_COOKIE)?.value;
+  const sessionCookie = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
+
+  if (
+    !token ||
+    !isAllowedAdminRole(token.role) ||
+    (!isValidAdminAccessCookie(accessToken, userId, sessionCookie) &&
+      !isValidAdminRefreshCookie(refreshToken, userId, sessionCookie))
+  ) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized: Super Admin authentication and access token required.' },
+      { status: 401 },
+    );
+  }
+
   try {
     const vital = await request.json();
 
