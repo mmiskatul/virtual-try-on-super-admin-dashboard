@@ -121,7 +121,7 @@ export function AiOperationsView({
                 <div><span className="text-slate-400">Provider</span><p className="font-bold uppercase">{model.providerId}</p></div>
                 <div><span className="text-slate-400">Category</span><p className="font-semibold">{model.category}</p></div>
                 <div><span className="text-slate-400">Resolution</span><p className="font-mono">{model.resolution}</p></div>
-                <div><span className="text-slate-400">Est. Cost / Run</span><p className="font-bold">${model.estCostUsd.toFixed(3)}</p></div>
+                <div><span className="text-slate-400">Est. Cost / Run</span><p className="font-bold">৳{model.estCostUsd.toFixed(3)}</p></div>
                 <div><span className="text-slate-400">Required Entitlement</span><p className="font-mono">{model.requiredEntitlement}</p></div>
                 <div><span className="text-slate-400">Garments</span><p>{model.supportedGarments.join(', ')}</p></div>
               </div>
@@ -251,7 +251,7 @@ export function AiOperationsView({
           <MetricCard label="Active AI Models" value={safeModels.filter((m) => m.active).length} icon={<Cpu className="w-4 h-4 text-indigo-600" />} />
           <MetricCard label="Queue Backlog" value={queueJobs.length} icon={<Activity className="w-4 h-4 text-amber-600" />} />
           <MetricCard label="Failed Jobs Logged" value={failedJobs.length} positive={failedJobs.length === 0} icon={<XCircle className="w-4 h-4 text-rose-600" />} />
-          <MetricCard label="Sample Batch Est. Cost" value={`$${totalEstCost.toFixed(3)}`} hint="Estimated inference spend across sample jobs; not a provider invoice." icon={<Coins className="w-4 h-4" />} />
+          <MetricCard label="Sample Batch Est. Cost" value={`৳${totalEstCost.toFixed(3)}`} hint="Estimated inference spend across sample jobs; not a provider invoice." icon={<Coins className="w-4 h-4" />} />
         </div>
 
         {/* Live Backend AI Key & Engine Configuration Component (Existing backend-connected panel) */}
@@ -273,7 +273,7 @@ export function AiOperationsView({
                   <div className="grid grid-cols-1 min-[360px]:grid-cols-3 gap-2 text-slate-600">
                     <div>Latency: <strong>{pr.avgLatencyMs}ms</strong></div>
                     <div>Err Rate: <strong>{pr.errorRatePct}%</strong></div>
-                    <div>Est/Run: <strong>${pr.estimatedCostPerRunUsd}</strong></div>
+                    <div>Est/Run: <strong>৳{pr.estimatedCostPerRunUsd}</strong></div>
                   </div>
                   <p className="text-[11px] text-slate-500 font-mono">Models: {pr.models.join(', ')}</p>
                 </div>
@@ -304,7 +304,7 @@ export function AiOperationsView({
                     <span className="font-mono text-indigo-700">{m.requiredEntitlement}</span>
                   </div>
                   <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
-                    <span className="font-bold text-slate-900 tabular-nums">${m.estCostUsd.toFixed(3)} / run</span>
+                    <span className="font-bold text-slate-900 tabular-nums">৳{m.estCostUsd.toFixed(3)} / run</span>
                     <Button
                       variant="outline"
                       size="sm"
@@ -343,7 +343,7 @@ export function AiOperationsView({
                       <td className="py-2.5 pr-4 uppercase font-semibold">{m.providerId}</td>
                       <td className="py-2.5 pr-4 text-slate-600">{m.category} • {m.resolution}</td>
                       <td className="py-2.5 pr-4 font-mono text-indigo-700">{m.requiredEntitlement}</td>
-                      <td className="py-2.5 pr-4 font-bold">${m.estCostUsd.toFixed(3)}</td>
+                      <td className="py-2.5 pr-4 font-bold">৳{m.estCostUsd.toFixed(3)}</td>
                       <td className="py-2.5 pr-4"><StatusPill status={m.active ? 'ACTIVE' : 'DISABLED'} /></td>
                       <td className="py-2.5 text-right">
                         <Button
@@ -409,7 +409,7 @@ export function AiOperationsView({
           <div className="space-y-6">
             <InlineAlert tone="info">
               <span>
-                <strong>Cost Accounting Notice:</strong> Provider USD figures reflect estimated internal per-run pricing rates, NOT audited supplier billing invoices. Margin = Subscription Revenue - Estimated AI Costs.
+                <strong>Cost Accounting Notice:</strong> Provider BDT figures reflect estimated internal per-run pricing rates, NOT audited supplier billing invoices. Margin = Subscription Revenue - Estimated AI Costs.
               </span>
             </InlineAlert>
 

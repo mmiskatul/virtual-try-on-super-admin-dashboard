@@ -115,7 +115,7 @@ export function SubscriptionsPlansView({
           ) : (
             <SectionPanel title={`${sub.tenantName} — ${sub.planName}`} right={<StatusPill status={sub.status} />}>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-                <div><span className="text-slate-400">Amount</span><p className="font-bold">${sub.amount} {sub.currency}/{sub.interval.toLowerCase()}</p></div>
+                <div><span className="text-slate-400">Amount</span><p className="font-bold">৳{sub.amount} {sub.currency}/{sub.interval.toLowerCase()}</p></div>
                 <div><span className="text-slate-400">Provider</span><p className="font-bold">{sub.paymentProvider}</p></div>
                 <div><span className="text-slate-400">Started</span><p>{sub.startedAt}</p></div>
                 <div><span className="text-slate-400">Next Renewal</span><p>{sub.renewalDate}</p></div>
@@ -216,7 +216,7 @@ export function SubscriptionsPlansView({
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <MetricCard label="Active MRR" value={`$${activeMrr.toLocaleString()}`} icon={<TrendingUp className="w-4 h-4 text-emerald-600" />} />
+          <MetricCard label="Active MRR" value={`৳${activeMrr.toLocaleString()}`} icon={<TrendingUp className="w-4 h-4 text-emerald-600" />} />
           <MetricCard label="Configured Plans" value={safePlans.length} icon={<Layers className="w-4 h-4" />} />
           <MetricCard label="Active Trials" value={safeSubs.filter((s) => s.status === 'TRIALING').length} icon={<Sparkles className="w-4 h-4 text-amber-600" />} />
           <MetricCard label="Past Due / Cancelled" value={safeSubs.filter((s) => s.status === 'PAST_DUE' || s.status === 'CANCELLED').length} icon={<CreditCard className="w-4 h-4 text-rose-600" />} />
@@ -232,8 +232,8 @@ export function SubscriptionsPlansView({
                 right={p.recommended ? <StatusPill status="ACTIVE" /> : undefined}
               >
                 <p className="text-2xl font-bold text-slate-900">
-                  ${p.monthlyPrice}
-                  <span className="text-xs font-normal text-slate-500">/mo (${p.annualPrice}/yr)</span>
+                  ৳{p.monthlyPrice}
+                  <span className="text-xs font-normal text-slate-500">/mo (৳{p.annualPrice}/yr)</span>
                 </p>
                 <div className="space-y-1 text-xs text-slate-600">
                   <p>Max Products: <strong>{p.limits.maxProducts.toLocaleString()}</strong></p>
@@ -271,7 +271,7 @@ export function SubscriptionsPlansView({
                   monthlyPrice: Number(monthlyPrice) || 0,
                   annualPrice: Number(annualPrice) || 0,
                   setupFee: existingPlan?.setupFee || 0,
-                  currency: 'USD',
+                  currency: 'BDT',
                   trialDays: Number(trialDays) || 14,
                   publicVisible: true,
                   displayOrder: existingPlan?.displayOrder || safePlans.length + 1,
@@ -300,11 +300,11 @@ export function SubscriptionsPlansView({
                   <input required value={planName} onChange={(e) => setPlanName(e.target.value)} placeholder="e.g. Boutique Plus" className="w-full rounded-lg border border-slate-200 px-3 py-2" />
                 </label>
                 <label className="space-y-1">
-                  <span className="font-semibold text-slate-700">Monthly Price ($)</span>
+                  <span className="font-semibold text-slate-700">Monthly Price (৳)</span>
                   <input type="number" min="0" value={monthlyPrice} onChange={(e) => setMonthlyPrice(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2" />
                 </label>
                 <label className="space-y-1">
-                  <span className="font-semibold text-slate-700">Annual Price ($)</span>
+                  <span className="font-semibold text-slate-700">Annual Price (৳)</span>
                   <input type="number" min="0" value={annualPrice} onChange={(e) => setAnnualPrice(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2" />
                 </label>
                 <label className="space-y-1">

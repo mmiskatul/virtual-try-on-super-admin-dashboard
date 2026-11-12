@@ -157,7 +157,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         .filter((tx) => tx.id.toLowerCase().includes(q) || tx.tenantName.toLowerCase().includes(q))
         .slice(0, 2)
         .forEach((tx) =>
-          results.push({ category: 'Transaction', label: tx.id, sub: `$${tx.amount} • ${tx.status}`, href: `/admin/finance/transactions` })
+          results.push({ category: 'Transaction', label: tx.id, sub: `৳${tx.amount} • ${tx.status}`, href: `/admin/finance/transactions` })
         );
     }
     if (canAdminPerform(activeRole, 'marketplace', 'view', roleOverrides)) {

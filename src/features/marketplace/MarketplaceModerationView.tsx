@@ -111,7 +111,7 @@ export function MarketplaceModerationView({
           ) : (
             <SectionPanel title={`${prod.brandName} — ${prod.category}`} right={<StatusPill status={prod.moderationStatus} />}>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-                <div><span className="text-slate-400">Price</span><p className="font-bold">${prod.price}</p></div>
+                <div><span className="text-slate-400">Price</span><p className="font-bold">৳{prod.price}</p></div>
                 <div><span className="text-slate-400">Visibility</span><p><StatusPill status={prod.visibility} /></p></div>
                 <div><span className="text-slate-400">Featured</span><p>{prod.featured ? 'Featured' : 'Standard'}</p></div>
                 <div><span className="text-slate-400">Reports</span><p className="font-bold">{prod.reportsCount}</p></div>

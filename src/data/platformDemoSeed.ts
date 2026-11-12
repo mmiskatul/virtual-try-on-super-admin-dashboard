@@ -196,7 +196,7 @@ export const DEMO_PLANS: SubscriptionPlanRecord[] = [
     monthlyPrice: 0,
     annualPrice: 0,
     setupFee: 0,
-    currency: 'USD',
+    currency: 'BDT',
     trialDays: 0,
     publicVisible: true,
     displayOrder: 1,
@@ -231,7 +231,7 @@ export const DEMO_PLANS: SubscriptionPlanRecord[] = [
     monthlyPrice: 39,
     annualPrice: 390,
     setupFee: 0,
-    currency: 'USD',
+    currency: 'BDT',
     trialDays: 14,
     publicVisible: true,
     displayOrder: 2,
@@ -266,7 +266,7 @@ export const DEMO_PLANS: SubscriptionPlanRecord[] = [
     monthlyPrice: 99,
     annualPrice: 990,
     setupFee: 0,
-    currency: 'USD',
+    currency: 'BDT',
     trialDays: 14,
     publicVisible: true,
     recommended: true,
@@ -302,7 +302,7 @@ export const DEMO_PLANS: SubscriptionPlanRecord[] = [
     monthlyPrice: 179,
     annualPrice: 1790,
     setupFee: 0,
-    currency: 'USD',
+    currency: 'BDT',
     trialDays: 14,
     publicVisible: true,
     displayOrder: 4,
@@ -337,7 +337,7 @@ export const DEMO_PLANS: SubscriptionPlanRecord[] = [
     monthlyPrice: 299,
     annualPrice: 2990,
     setupFee: 250,
-    currency: 'USD',
+    currency: 'BDT',
     trialDays: 30,
     publicVisible: true,
     displayOrder: 5,
@@ -374,7 +374,7 @@ export const DEMO_SUBSCRIPTIONS: TenantSubscriptionRecord[] = DEMO_TENANTS.map((
   planName: t.plan,
   interval: idx % 3 === 0 ? 'ANNUAL' : 'MONTHLY',
   amount: t.monthlySpend,
-  currency: 'USD',
+  currency: 'BDT',
   status: t.subscriptionStatus,
   paymentProvider: idx % 4 === 0 ? 'SSLCOMMERZ' : 'STRIPE',
   startedAt: t.joinedDate,
@@ -383,27 +383,27 @@ export const DEMO_SUBSCRIPTIONS: TenantSubscriptionRecord[] = DEMO_TENANTS.map((
 }));
 
 export const DEMO_TRANSACTIONS: PaymentTransaction[] = [
-  { id: 'txn_9012', tenantId: 'tenant_vogue', tenantName: 'Vogue Nova', customerOrEntity: 'Marcus Sterling', type: 'SUBSCRIPTION', amount: 299, currency: 'USD', provider: 'STRIPE', providerRef: 'pi_3Q8xL92a', status: 'SUCCEEDED', createdAt: '2026-11-11 08:12' },
-  { id: 'txn_9011', tenantId: 'tenant_aura', tenantName: 'Aura Atelier', customerOrEntity: 'Elena Rostova', type: 'SUBSCRIPTION', amount: 99, currency: 'USD', provider: 'SSLCOMMERZ', providerRef: 'SSL-88412A', status: 'SUCCEEDED', createdAt: '2026-11-10 17:45' },
-  { id: 'txn_9010', tenantId: 'tenant_012', tenantName: 'Velvet Thread', customerOrEntity: 'Maya Chen', type: 'SUBSCRIPTION', amount: 99, currency: 'USD', provider: 'STRIPE', providerRef: 'pi_3Q8vF11c', status: 'FAILED', failureReason: 'insufficient_funds', createdAt: '2026-11-10 14:02' },
-  { id: 'txn_9009', tenantId: 'tenant_003', tenantName: 'Aarong Heritage Studio', customerOrEntity: 'Farhana Rahman', type: 'CREDIT_PACK', amount: 150, currency: 'USD', provider: 'BKASH', providerRef: 'BK-910283', status: 'SUCCEEDED', createdAt: '2026-11-09 12:30' },
-  { id: 'txn_9008', tenantId: 'tenant_014', tenantName: 'Monsoon Outerwear', customerOrEntity: 'Arjun Mehta', type: 'SUBSCRIPTION', amount: 99, currency: 'USD', provider: 'STRIPE', providerRef: 'pi_3Q8kQ71b', status: 'REFUNDED', createdAt: '2026-11-08 09:18' },
+  { id: 'txn_9012', tenantId: 'tenant_vogue', tenantName: 'Vogue Nova', customerOrEntity: 'Marcus Sterling', type: 'SUBSCRIPTION', amount: 299, currency: 'BDT', provider: 'STRIPE', providerRef: 'pi_3Q8xL92a', status: 'SUCCEEDED', createdAt: '2026-11-11 08:12' },
+  { id: 'txn_9011', tenantId: 'tenant_aura', tenantName: 'Aura Atelier', customerOrEntity: 'Elena Rostova', type: 'SUBSCRIPTION', amount: 99, currency: 'BDT', provider: 'SSLCOMMERZ', providerRef: 'SSL-88412A', status: 'SUCCEEDED', createdAt: '2026-11-10 17:45' },
+  { id: 'txn_9010', tenantId: 'tenant_012', tenantName: 'Velvet Thread', customerOrEntity: 'Maya Chen', type: 'SUBSCRIPTION', amount: 99, currency: 'BDT', provider: 'STRIPE', providerRef: 'pi_3Q8vF11c', status: 'FAILED', failureReason: 'insufficient_funds', createdAt: '2026-11-10 14:02' },
+  { id: 'txn_9009', tenantId: 'tenant_003', tenantName: 'Aarong Heritage Studio', customerOrEntity: 'Farhana Rahman', type: 'CREDIT_PACK', amount: 150, currency: 'BDT', provider: 'BKASH', providerRef: 'BK-910283', status: 'SUCCEEDED', createdAt: '2026-11-09 12:30' },
+  { id: 'txn_9008', tenantId: 'tenant_014', tenantName: 'Monsoon Outerwear', customerOrEntity: 'Arjun Mehta', type: 'SUBSCRIPTION', amount: 99, currency: 'BDT', provider: 'STRIPE', providerRef: 'pi_3Q8kQ71b', status: 'REFUNDED', createdAt: '2026-11-08 09:18' },
 ];
 
 export const DEMO_INVOICES: PlatformInvoice[] = [
-  { id: 'INV-2026-441', tenantId: 'tenant_vogue', tenantName: 'Vogue Nova', subscriptionId: 'sub_0002', period: 'Nov 2026', subtotal: 299, taxAmount: 0, total: 299, currency: 'USD', status: 'PAID', dueDate: '2026-11-01', issuedAt: '2026-11-01' },
-  { id: 'INV-2026-440', tenantId: 'tenant_aura', tenantName: 'Aura Atelier', subscriptionId: 'sub_0001', period: 'Nov 2026', subtotal: 99, taxAmount: 4.95, total: 103.95, currency: 'USD', status: 'PAID', dueDate: '2026-11-01', issuedAt: '2026-11-01' },
-  { id: 'INV-2026-439', tenantId: 'tenant_012', tenantName: 'Velvet Thread', subscriptionId: 'sub_0012', period: 'Nov 2026', subtotal: 99, taxAmount: 0, total: 99, currency: 'USD', status: 'PAST_DUE', dueDate: '2026-11-05', issuedAt: '2026-11-01' },
+  { id: 'INV-2026-441', tenantId: 'tenant_vogue', tenantName: 'Vogue Nova', subscriptionId: 'sub_0002', period: 'Nov 2026', subtotal: 299, taxAmount: 0, total: 299, currency: 'BDT', status: 'PAID', dueDate: '2026-11-01', issuedAt: '2026-11-01' },
+  { id: 'INV-2026-440', tenantId: 'tenant_aura', tenantName: 'Aura Atelier', subscriptionId: 'sub_0001', period: 'Nov 2026', subtotal: 99, taxAmount: 4.95, total: 103.95, currency: 'BDT', status: 'PAID', dueDate: '2026-11-01', issuedAt: '2026-11-01' },
+  { id: 'INV-2026-439', tenantId: 'tenant_012', tenantName: 'Velvet Thread', subscriptionId: 'sub_0012', period: 'Nov 2026', subtotal: 99, taxAmount: 0, total: 99, currency: 'BDT', status: 'PAST_DUE', dueDate: '2026-11-05', issuedAt: '2026-11-01' },
 ];
 
 export const DEMO_REFUNDS: RefundRequest[] = [
-  { id: 'ref_301', transactionId: 'txn_9008', tenantName: 'Monsoon Outerwear', amount: 99, currency: 'USD', reason: 'Duplicate billing cycle charge', status: 'COMPLETED_BY_PROVIDER', requestedBy: 'Finance Ops', approvedBy: 'Platform Owner', createdAt: '2026-11-08 10:15' },
-  { id: 'ref_302', transactionId: 'txn_9009', tenantName: 'Aarong Heritage Studio', amount: 45, currency: 'USD', reason: 'AI service timeout batch compensation', status: 'REQUESTED', requestedBy: 'Support Manager', createdAt: '2026-11-11 09:05' },
+  { id: 'ref_301', transactionId: 'txn_9008', tenantName: 'Monsoon Outerwear', amount: 99, currency: 'BDT', reason: 'Duplicate billing cycle charge', status: 'COMPLETED_BY_PROVIDER', requestedBy: 'Finance Ops', approvedBy: 'Platform Owner', createdAt: '2026-11-08 10:15' },
+  { id: 'ref_302', transactionId: 'txn_9009', tenantName: 'Aarong Heritage Studio', amount: 45, currency: 'BDT', reason: 'AI service timeout batch compensation', status: 'REQUESTED', requestedBy: 'Support Manager', createdAt: '2026-11-11 09:05' },
 ];
 
 export const DEMO_RECONCILIATIONS: ReconciliationItem[] = [
   { id: 'rec_101', provider: 'STRIPE', providerEventId: 'evt_3Q8vF11c99', type: 'WEBHOOK_FAILURE', expectedAmount: 99, providerAmount: 0, status: 'OPEN', detectedAt: '2026-11-10 14:04', notes: 'Stripe invoice.payment_failed webhook retry exhausted.' },
-  { id: 'rec_102', provider: 'SSLCOMMERZ', providerEventId: 'ipn_88412_v2', type: 'MISMATCHED_AMOUNT', expectedAmount: 103.95, providerAmount: 99.0, status: 'INVESTIGATING', detectedAt: '2026-11-09 19:20', notes: 'VAT calculation rounding delta ($4.95) flagged in settlement batch.' },
+  { id: 'rec_102', provider: 'SSLCOMMERZ', providerEventId: 'ipn_88412_v2', type: 'MISMATCHED_AMOUNT', expectedAmount: 103.95, providerAmount: 99.0, status: 'INVESTIGATING', detectedAt: '2026-11-09 19:20', notes: 'VAT calculation rounding delta (৳4.95) flagged in settlement batch.' },
 ];
 
 export const DEMO_AI_PROVIDERS: AiProviderRecord[] = [
@@ -582,7 +582,7 @@ export const DEMO_WEBHOOKS: WebhookSubscription[] = [
 export const DEMO_PLATFORM_SETTINGS: PlatformGlobalSettings = {
   platformName: 'V-TRY Multi-Tenant SaaS',
   supportEmail: 'platform-ops@vton-platform.io',
-  defaultCurrency: 'USD',
+  defaultCurrency: 'BDT',
   defaultLanguage: 'English (en-US)',
   timezone: 'UTC',
   maxImageUploadMb: 10,

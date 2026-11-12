@@ -95,7 +95,7 @@ export function TenantGovernance({ tenants, onToggleStatus, onOpenAddTenant }: T
                 <td className="py-3 px-4 text-gray-700">
                   {t.productsCount} products • {t.ordersCount} orders
                 </td>
-                <td className="py-3 px-4 font-bold text-emerald-600">${t.gmv}</td>
+                <td className="py-3 px-4 font-bold text-emerald-600">৳{t.gmv}</td>
                 <td className="py-3 px-4">
                   <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
                     t.status === 'ACTIVE'

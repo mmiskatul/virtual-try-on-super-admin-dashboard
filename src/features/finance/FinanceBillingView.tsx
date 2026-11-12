@@ -114,8 +114,8 @@ export function FinanceBillingView({
         </InlineAlert>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <MetricCard label="Settled Sample Revenue" value={`$${gross.toFixed(2)}`} icon={<DollarSign className="w-4 h-4 text-emerald-600" />} />
-          <MetricCard label="Net Settled" value={`$${net.toFixed(2)}`} icon={<CreditCard className="w-4 h-4 text-indigo-600" />} />
+          <MetricCard label="Settled Sample Revenue" value={`৳${gross.toFixed(2)}`} icon={<DollarSign className="w-4 h-4 text-emerald-600" />} />
+          <MetricCard label="Net Settled" value={`৳${net.toFixed(2)}`} icon={<CreditCard className="w-4 h-4 text-indigo-600" />} />
           <MetricCard label="Failed Payments" value={failedCount} positive={failedCount === 0} icon={<AlertCircle className="w-4 h-4 text-rose-600" />} />
           <MetricCard label="Open Reconciliations" value={unresolvedRecon} positive={unresolvedRecon === 0} icon={<RotateCcw className="w-4 h-4 text-amber-600" />} />
         </div>
@@ -130,7 +130,7 @@ export function FinanceBillingView({
                       <p className="font-mono font-bold text-slate-900 break-all">{t.id}</p>
                       <p className="font-bold text-slate-800 truncate">{t.tenantName}</p>
                     </div>
-                    <span className="font-extrabold text-slate-950 tabular-nums shrink-0">${t.amount.toFixed(2)}</span>
+                    <span className="font-extrabold text-slate-950 tabular-nums shrink-0">৳{t.amount.toFixed(2)}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
                     <span>{t.type.replace('_', ' ')}</span>
@@ -167,7 +167,7 @@ export function FinanceBillingView({
                       <td className="py-2.5 pr-4 font-bold">{t.tenantName}</td>
                       <td className="py-2.5 pr-4">{t.type.replace('_', ' ')}</td>
                       <td className="py-2.5 pr-4 font-mono text-slate-500">{t.provider} • {t.providerRef}</td>
-                      <td className="py-2.5 pr-4 font-bold">${t.amount.toFixed(2)}</td>
+                      <td className="py-2.5 pr-4 font-bold">৳{t.amount.toFixed(2)}</td>
                       <td className="py-2.5 pr-4">
                         <StatusPill status={t.status} />
                         {t.failureReason && <span className="ml-1.5 text-[11px] text-rose-700">{t.failureReason}</span>}
@@ -191,13 +191,13 @@ export function FinanceBillingView({
                     <p className="text-slate-500 break-words">Period: {inv.period} • Tax: ${inv.taxAmount} • Due {inv.dueDate}</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
-                    <span className="font-bold text-slate-900">${inv.total.toFixed(2)} {inv.currency}</span>
+                    <span className="font-bold text-slate-900">৳{inv.total.toFixed(2)} {inv.currency}</span>
                     <StatusPill status={inv.status} />
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        const blob = new Blob([`Invoice ${inv.id}\nTenant: ${inv.tenantName}\nTotal: $${inv.total}\nStatus: ${inv.status}`], { type: 'text/plain' });
+                        const blob = new Blob([`Invoice ${inv.id}\nTenant: ${inv.tenantName}\nTotal: ৳${inv.total}\nStatus: ${inv.status}`], { type: 'text/plain' });
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.href = url;
@@ -226,7 +226,7 @@ export function FinanceBillingView({
                     <p className="text-slate-500 break-words">{r.reason} • Requested by {r.requestedBy}</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
-                    <span className="font-bold text-slate-900">${r.amount.toFixed(2)}</span>
+                    <span className="font-bold text-slate-900">৳{r.amount.toFixed(2)}</span>
                     <StatusPill status={r.status} />
                     {r.status === 'REQUESTED' && (
                       <Button
@@ -278,12 +278,12 @@ export function FinanceBillingView({
 
         <ConfirmActionDialog
           open={Boolean(confirmRefund)}
-          title={`Authorize Provider Refund ($${confirmRefund?.amount.toFixed(2)})?`}
+          title={`Authorize Provider Refund (৳${confirmRefund?.amount.toFixed(2)})?`}
           description="Sends refund authorization to the provider queue. Status remains APPROVED_PENDING_PROVIDER until settlement webhook confirmation."
           requireReason
           twoPersonApprovalNote={
             confirmRefund && confirmRefund.amount >= 500
-              ? 'Refunds $500+ require secondary finance officer approval.'
+              ? 'Refunds ৳500+ require secondary finance officer approval.'
               : undefined
           }
           confirmLabel="Submit to Provider Queue"

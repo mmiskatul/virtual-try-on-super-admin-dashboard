@@ -457,7 +457,7 @@ export function TenantGovernanceView({
                     <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-lg bg-slate-50 border border-slate-200">
                       <div>
                         <p className="font-bold text-slate-900">Active Plan: {tenant.plan}</p>
-                        <p className="text-slate-500">Monthly Spend: ${tenant.monthlySpend} USD</p>
+                        <p className="text-slate-500">Monthly Spend: ৳{tenant.monthlySpend} BDT</p>
                       </div>
                       <select
                         disabled={!canEdit}
@@ -484,7 +484,7 @@ export function TenantGovernanceView({
                     {tenantInvoices.map((inv) => (
                       <div key={inv.id} className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg border border-slate-200">
                         <span className="font-mono font-bold">{inv.id} ({inv.period})</span>
-                        <span>${inv.total} USD</span>
+                        <span>৳{inv.total} BDT</span>
                         <StatusPill status={inv.status} />
                       </div>
                     ))}
@@ -843,7 +843,7 @@ export function TenantGovernanceView({
                         </td>
                         <td className="py-3 pr-4">
                           <p className="font-bold text-slate-900">{t.plan}</p>
-                          <p className="text-[11px] text-slate-500">${t.monthlySpend}/mo</p>
+                          <p className="text-[11px] text-slate-500">৳{t.monthlySpend}/mo</p>
                         </td>
                         <td className="py-3 pr-4 text-slate-600">
                           {t.productsCount} SKUs / {t.marketplacePublishedCount} pub
@@ -859,7 +859,7 @@ export function TenantGovernanceView({
                             />
                           </div>
                         </td>
-                        <td className="py-3 pr-4 font-bold text-slate-900">${t.gmv.toLocaleString()}</td>
+                        <td className="py-3 pr-4 font-bold text-slate-900">৳{t.gmv.toLocaleString()}</td>
                         <td className="py-3 pr-4">
                           <StatusPill status={t.lifecycleStatus} />
                         </td>

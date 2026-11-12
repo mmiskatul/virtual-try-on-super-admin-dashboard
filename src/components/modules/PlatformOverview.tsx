@@ -23,7 +23,7 @@ export function PlatformOverview({ tenants, totalGMV, totalTryOnSessions }: Plat
 
         <div className="admin-card p-5 rounded-2xl">
           <p className="text-xs font-semibold text-gray-500">Platform GMV</p>
-          <p className="text-3xl font-black text-emerald-600 mt-2">${totalGMV.toLocaleString()}</p>
+          <p className="text-3xl font-black text-emerald-600 mt-2">৳{totalGMV.toLocaleString()}</p>
           <p className="text-xs text-gray-500 mt-3">Aggregated across all brand checkouts</p>
         </div>
 

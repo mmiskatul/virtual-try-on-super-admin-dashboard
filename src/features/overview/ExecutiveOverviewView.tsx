@@ -124,11 +124,11 @@ export function ExecutiveOverviewView({
       ['Total Platform Users', safeUsers.length],
       ['Marketplace Customers', marketplaceCustomers],
       ['Active Subscriptions', activeSubsCount],
-      ['MRR (USD)', mrr],
-      ['ARR (USD)', arr],
-      ['Total Platform GMV (USD)', totalGmv],
+      ['MRR (BDT)', mrr],
+      ['ARR (BDT)', arr],
+      ['Total Platform GMV (BDT)', totalGmv],
       ['Total Try-On Generations', totalGenerations],
-      ['Estimated AI Cost (USD)', estimatedAiCost],
+      ['Estimated AI Cost (BDT)', estimatedAiCost],
       ['Published Marketplace Products', publishedProducts],
       ['Total Orders', totalOrders],
     ];
@@ -205,11 +205,11 @@ export function ExecutiveOverviewView({
           <MetricCard label="Platform Users" value={safeUsers.length} delta="+14%" icon={<Users className="w-4 h-4" />} />
           <MetricCard label="Marketplace Shoppers" value={marketplaceCustomers} delta="+18%" icon={<Users className="w-4 h-4 text-indigo-600" />} />
           <MetricCard label="Active Subscriptions" value={activeSubsCount} delta="+4" icon={<CreditCard className="w-4 h-4" />} />
-          <MetricCard label="Monthly Recurring (MRR)" value={`$${mrr.toLocaleString()}`} delta="+14.2%" icon={<TrendingUp className="w-4 h-4 text-emerald-600" />} />
-          <MetricCard label="Annual Run Rate (ARR)" value={`$${arr.toLocaleString()}`} delta="+14.2%" icon={<TrendingUp className="w-4 h-4 text-indigo-600" />} />
-          <MetricCard label="Platform GMV" value={`$${totalGmv.toLocaleString()}`} delta="+22.4%" icon={<ShoppingBag className="w-4 h-4" />} />
+          <MetricCard label="Monthly Recurring (MRR)" value={`৳${mrr.toLocaleString()}`} delta="+14.2%" icon={<TrendingUp className="w-4 h-4 text-emerald-600" />} />
+          <MetricCard label="Annual Run Rate (ARR)" value={`৳${arr.toLocaleString()}`} delta="+14.2%" icon={<TrendingUp className="w-4 h-4 text-indigo-600" />} />
+          <MetricCard label="Platform GMV" value={`৳${totalGmv.toLocaleString()}`} delta="+22.4%" icon={<ShoppingBag className="w-4 h-4" />} />
           <MetricCard label="Try-On Generations" value={totalGenerations.toLocaleString()} delta="+19.1%" icon={<Sparkles className="w-4 h-4 text-amber-600" />} />
-          <MetricCard label="Est. AI Infra Cost" value={`$${estimatedAiCost.toLocaleString()}`} delta="Est. $0.024/run" icon={<Cpu className="w-4 h-4" />} hint="Estimated model cost across providers" />
+          <MetricCard label="Est. AI Infra Cost" value={`৳${estimatedAiCost.toLocaleString()}`} delta="Est. ৳0.024/run" icon={<Cpu className="w-4 h-4" />} hint="Estimated model cost across providers" />
           <MetricCard label="Published Products" value={publishedProducts} delta="+6" icon={<Globe className="w-4 h-4" />} />
           <MetricCard label="Marketplace Orders" value={totalOrders.toLocaleString()} delta="+11.8%" icon={<Coins className="w-4 h-4" />} />
         </div>
@@ -223,8 +223,8 @@ export function ExecutiveOverviewView({
             right={
               <div className="flex flex-wrap gap-1.5 text-xs">
                 {[
-                  ['revenue', 'Platform Revenue ($)'],
-                  ['mrr', 'SaaS MRR ($)'],
+                  ['revenue', 'Platform Revenue (৳)'],
+                  ['mrr', 'SaaS MRR (৳)'],
                   ['generations', 'AI Try-Ons'],
                 ].map(([k, lbl]) => (
                   <button

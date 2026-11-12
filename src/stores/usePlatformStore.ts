@@ -477,7 +477,7 @@ export const usePlatformStore = create<PlatformStoreState>()(
             plans: exists ? s.plans.map((p) => (p.id === plan.id ? plan : p)) : [...s.plans, plan],
           };
         });
-        get().recordAudit('PLAN_CONFIG_SAVED', plan.name, `Saved entitlement matrix (${plan.monthlyPrice} USD/mo)`);
+        get().recordAudit('PLAN_CONFIG_SAVED', plan.name, `Saved entitlement matrix (৳${plan.monthlyPrice} BDT/mo)`);
       },
 
       updateSubscriptionStatus: (id, status, extra) => {
