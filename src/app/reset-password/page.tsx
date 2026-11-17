@@ -179,7 +179,7 @@ function AdminResetPasswordContent() {
           <>
             <div className="space-y-1">
               <label className="block text-xs font-medium text-gray-700">Administrator Email</label>
-              <Input type="email" placeholder="admin@vton-platform.io" {...register('email')} />
+              <Input type="email" placeholder="you@example.com" {...register('email')} />
             </div>
             <div className="space-y-1">
               <label className="block text-xs font-medium text-gray-700">6-Digit Reset Code</label>

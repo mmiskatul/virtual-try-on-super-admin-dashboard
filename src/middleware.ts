@@ -72,6 +72,7 @@ function createContentSecurityPolicy(nonce: string) {
     object-src 'none';
     base-uri 'self';
     form-action 'self';
+    frame-src 'self' https://accounts.google.com;
     frame-ancestors 'none';
     block-all-mixed-content;
     upgrade-insecure-requests;

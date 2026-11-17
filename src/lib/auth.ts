@@ -26,7 +26,7 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'Super Admin Security Portal',
       credentials: {
-        email: { label: 'Admin Email', type: 'email', placeholder: 'admin@vton-platform.io' },
+        email: { label: 'Admin Email', type: 'email', placeholder: 'you@example.com' },
         password: { label: 'Security Key', type: 'password' }
       },
       async authorize(credentials, req) {

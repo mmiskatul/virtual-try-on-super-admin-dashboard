@@ -187,7 +187,7 @@ function AdminVerifyEmailContent() {
           <label className="block text-xs font-medium text-gray-700">Administrator Email</label>
           <Input
             type="email"
-            placeholder="admin@vton-platform.io"
+            placeholder="you@example.com"
             {...register('email')}
             className={errors.email ? 'border-rose-500' : ''}
           />

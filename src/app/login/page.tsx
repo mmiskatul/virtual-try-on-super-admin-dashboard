@@ -4,15 +4,10 @@ import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn, getSession, useSession, signOut } from 'next-auth/react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertCircle, CheckCircle2, Loader2, MailCheck, ShieldCheck, ArrowRight } from 'lucide-react';
-import { adminLoginSchema, AdminLoginFormValues } from '../../lib/schemas';
+import { AlertCircle, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { superAdminApi } from '../../lib/api';
 import { AuthShell } from '../../components/auth/AuthShell';
-import { PasswordField } from '../../components/auth/PasswordField';
-import { Input } from '../../components/ui/input';
-import { Button } from '../../components/ui/button';
+import { GoogleSignInButton } from '../../components/auth/GoogleSignInButton';
 
 function sanitizeCallbackUrl(raw: string | null): string {
   if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw === '/' || raw.startsWith('/login')) {
@@ -29,99 +24,52 @@ function AdminLoginContent() {
   const callbackUrl = sanitizeCallbackUrl(searchParams.get('callbackUrl'));
   const verifiedParam = searchParams.get('verified');
   const resetParam = searchParams.get('reset');
-  const prefillEmail = searchParams.get('email') || '';
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [needsVerificationEmail, setNeedsVerificationEmail] = useState<string | null>(null);
-  const [resendMessage, setResendMessage] = useState<string | null>(null);
-  const [resendLoading, setResendLoading] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    getValues,
-    formState: { errors, isSubmitting },
-  } = useForm<AdminLoginFormValues>({
-    resolver: zodResolver(adminLoginSchema),
-    defaultValues: { email: prefillEmail, password: '' },
-  });
-
-  const performLogin = async (email: string, password: string) => {
+  const handleGoogleCredential = async (idToken: string) => {
     setErrorMsg(null);
-    setNeedsVerificationEmail(null);
-    setResendMessage(null);
-
+    setSigningIn(true);
     try {
-      await superAdminApi.login({ email, password });
-    } catch (err: any) {
-      if (err?.data?.code === 'EMAIL_NOT_VERIFIED') {
-        setNeedsVerificationEmail(email);
-        setErrorMsg('Administrator email verification is required before signing in.');
-      } else {
-        setErrorMsg(err?.message || 'Invalid administrator email or password.');
+      // 1. The backend checks the Google token and the allowed email, then sets the secure session cookies.
+      const res = await superAdminApi.loginWithGoogle(idToken);
+
+      // 2. The console session picks those cookies up (no password involved).
+      const result = await signIn('credentials', { redirect: false, email: res?.admin?.email || '' });
+      if (result?.error) {
+        setErrorMsg(
+          result.error === 'SERVICE_UNAVAILABLE'
+            ? 'The backend server is unreachable. Please try again shortly.'
+            : 'Could not establish the administrator session. Please try again.'
+        );
+        return;
       }
-      return;
-    }
-
-    const result = await signIn('credentials', {
-      redirect: false,
-      email,
-      password,
-    });
-
-    if (result?.error) {
-      if (result.error === 'SERVICE_UNAVAILABLE') {
-        setErrorMsg('Backend server is unreachable. Please ensure the backend API is running on port 4000.');
-      } else {
-        setErrorMsg(result.error === 'CredentialsSignin' ? 'Could not establish administrator session.' : result.error);
-      }
-      return;
-    }
-
-    if (typeof window !== 'undefined' && localStorage.getItem('admin_token')) {
-      localStorage.removeItem('admin_token');
-    }
-
-    await getSession();
-
-    if (typeof window !== 'undefined') {
+      await getSession();
       window.location.assign(callbackUrl);
-    } else {
-      router.replace(callbackUrl);
-      router.refresh();
-    }
-  };
-
-  const onSubmit = async (data: AdminLoginFormValues) => {
-    await performLogin(data.email, data.password);
-  };
-
-  const handleResendVerification = async () => {
-    const email = needsVerificationEmail || getValues('email');
-    if (!email) return;
-    setResendLoading(true);
-    setResendMessage(null);
-    try {
-      const res = await superAdminApi.resendVerification(email);
-      setResendMessage(res.message);
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Could not resend verification email.');
+      if (err?.data?.code === 'NOT_AN_ADMIN' || err?.status === 403) {
+        setErrorMsg('This Google account is not authorised for the Super Admin console. Use the Google account set up by the platform owner.');
+      } else if (err?.status === 429) {
+        setErrorMsg(err?.message || 'Too many attempts. Please wait a few minutes and try again.');
+      } else if (err?.status === 503) {
+        setErrorMsg('Google sign-in is not set up on the server yet.');
+      } else {
+        setErrorMsg(err?.message || 'Google sign-in failed. Please try again.');
+      }
     } finally {
-      setResendLoading(false);
+      setSigningIn(false);
     }
   };
 
   return (
     <AuthShell
       title="Super Admin Governance Sign In"
-      subtitle="Authenticate with platform root credentials to manage tenants, quotas, and AI infrastructure."
+      subtitle="Continue with the Google account of the platform owner to manage tenants, quotas, and AI infrastructure."
       badge="Restricted Control Plane"
       footer={
         <p className="text-[11px] text-gray-500">
-          Super Admin accounts are provisioned internally.{' '}
-          <Link href="/register" className="text-black hover:text-gray-700 font-semibold">
-            Security policy
-          </Link>
+          Only the Google account set up by the platform owner can sign in here.
         </p>
       }
     >
@@ -162,77 +110,26 @@ function AdminLoginContent() {
       {resetParam === '1' && (
         <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 text-xs flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
-          <span>Security password updated! Sign in with your new credentials.</span>
+          <span>Password updated.</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {errorMsg && (
-          <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-700 text-xs space-y-2">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{errorMsg}</span>
-            </div>
-            {needsVerificationEmail && (
-              <div className="flex flex-wrap gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={handleResendVerification}
-                  disabled={resendLoading}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-800 font-semibold"
-                >
-                  {resendLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MailCheck className="w-3.5 h-3.5" />}
-                  <span>Resend Verification</span>
-                </button>
-                <Link
-                  href={`/verify-email?email=${encodeURIComponent(needsVerificationEmail)}`}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-900 font-semibold"
-                >
-                  <span>Verify Code</span>
-                  <ArrowRight className="w-3 h-3" />
-                </Link>
-              </div>
-            )}
-          </div>
-        )}
-
-        {resendMessage && (
-          <div className="p-3 rounded-xl bg-gray-100 border border-gray-300 text-black text-xs">
-            {resendMessage}
-          </div>
-        )}
-
-        <div className="space-y-1">
-          <label className="block text-xs font-medium text-gray-700">Administrator Email</label>
-          <Input
-            type="email"
-            placeholder="admin@vton-platform.io"
-            autoComplete="email"
-            {...register('email')}
-            className={errors.email ? 'border-rose-500 focus-visible:border-rose-500' : ''}
-          />
-          {errors.email && <p className="text-rose-600 text-[11px] font-medium">{errors.email.message}</p>}
+      {errorMsg && (
+        <div role="alert" className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-700 text-xs flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{errorMsg}</span>
         </div>
+      )}
 
-        <PasswordField
-          label="Security Password"
-          placeholder="Enter your administrator password"
-          autoComplete="current-password"
-          error={errors.password?.message}
-          rightSlot={
-            <Link href="/forgot-password" className="text-[11px] text-black hover:text-gray-700 font-medium">
-              Forgot password?
-            </Link>
-          }
-          {...register('password')}
-        />
-
-        <Button type="submit" disabled={isSubmitting} className="w-full gap-2">
-          {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-          <span>{isSubmitting ? 'Authenticating...' : 'Sign In to Governance Console'}</span>
-        </Button>
-
-      </form>
+      <div className="space-y-3">
+        <GoogleSignInButton onCredential={handleGoogleCredential} disabled={signingIn} />
+        {signingIn && (
+          <p className="flex items-center justify-center gap-2 text-xs text-gray-600">
+            <ShieldCheck className="w-4 h-4" />
+            Checking your account...
+          </p>
+        )}
+      </div>
     </AuthShell>
   );
 }

@@ -22,6 +22,7 @@ function shouldAttemptRefresh(url: string): boolean {
   const lower = url.toLowerCase();
   return !(
     lower.includes('/auth/login') ||
+    lower.includes('/auth/oauth-google') ||
     lower.includes('/auth/register') ||
     lower.includes('/auth/refresh') ||
     lower.includes('/auth/logout')
@@ -104,6 +105,22 @@ export const superAdminApi = {
     return request<{ sessionId?: string; admin: any }>(`${BACKEND_API_URL}/api/v1/admin/auth/login`, {
       method: 'POST',
       body: JSON.stringify(credentials)
+    });
+  },
+
+  /** Whether Google sign-in is available, and the (public) Google client id to use. */
+  googleConfig: () => {
+    return request<{ enabled: boolean; googleClientId: string | null }>(
+      `${BACKEND_API_URL}/api/v1/admin/auth/google-config`,
+      { method: 'GET', cache: 'no-store' }
+    );
+  },
+
+  /** Exchanges a Google sign-in token for an admin session (the backend checks the email against its allow-list). */
+  loginWithGoogle: (idToken: string) => {
+    return request<{ sessionId?: string; admin: any }>(`${BACKEND_API_URL}/api/v1/admin/auth/oauth-google`, {
+      method: 'POST',
+      body: JSON.stringify({ idToken })
     });
   },
 

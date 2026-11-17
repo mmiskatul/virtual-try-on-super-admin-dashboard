@@ -339,7 +339,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                     {session?.user?.name || 'Platform Admin'}
                   </p>
                   <p className="text-[10px] text-slate-400 truncate">
-                    {session?.user?.email || 'admin@vton-platform.io'}
+                    {session?.user?.email || 'Super Admin'}
                   </p>
                 </div>
                 <button
@@ -589,7 +589,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                   {session?.user?.name || 'Platform Admin'}
                 </p>
                 <p className="text-[10px] text-slate-500">
-                  {session?.user?.email || 'admin@vton-platform.io'}
+                  {session?.user?.email || 'Super Admin'}
                 </p>
               </div>
             </div>
