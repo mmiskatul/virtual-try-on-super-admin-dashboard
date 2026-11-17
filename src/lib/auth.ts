@@ -4,7 +4,9 @@ import { isAllowedAdminRole } from './portal-auth';
 
 const BACKEND_API_URL =
   process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:4000';
-const useSecureNextAuthCookies = Boolean(process.env.NEXTAUTH_URL?.startsWith('https://'));
+// Secure cookies in production even when NEXTAUTH_URL is not set (host is auto-detected).
+const useSecureNextAuthCookies =
+  process.env.NODE_ENV === 'production' || Boolean(process.env.NEXTAUTH_URL?.startsWith('https://'));
 
 const PLATFORM_ADMIN_ROLES = {
   has: (role: string) => isAllowedAdminRole(role),

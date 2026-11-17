@@ -23,7 +23,11 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: '*.onrender.com'
+        hostname: 'api.vtrystudio.com'
+      },
+      {
+        protocol: 'https',
+        hostname: 'ai.vtrystudio.com'
       },
       {
         protocol: 'http',

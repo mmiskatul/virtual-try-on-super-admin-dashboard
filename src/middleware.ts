@@ -84,8 +84,8 @@ function createContentSecurityPolicy(nonce: string) {
 const ALLOWED_ORIGIN_PATTERNS = [
   /^https?:\/\/localhost(:\d+)?$/,
   /^https?:\/\/127\.0\.0\.1(:\d+)?$/,
-  /^https:\/\/[a-z0-9-]+\.vercel\.app$/,
-  /^https:\/\/([a-z0-9-]+\.)?vton-platform\.io$/,
+  // Official V-TRY Studio domains: vtrystudio.com, shop.brand.*, admin.*, www.*
+  /^https:\/\/([a-z0-9-]+\.)*vtrystudio\.com$/,
 ];
 
 function isOriginAllowed(origin: string | null, requestOrigin?: string): boolean {
