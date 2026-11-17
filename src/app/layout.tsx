@@ -51,6 +51,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${plusJakartaSans.variable} ${jetbrainsMono.variable}`}
     >
       <head>
@@ -59,6 +60,7 @@ export default function RootLayout({
       <body
         className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased"
         data-csp-protected={nonce ? 'true' : undefined}
+        suppressHydrationWarning
       >
         <QueryProvider>
           <WebVitalReporter serviceName="vton-super-admin" />
