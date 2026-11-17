@@ -56,8 +56,12 @@ export function WebVitalReporter({ serviceName = 'vton-super-admin' }: { service
       });
     }
 
-    // 3. Dispatch to Server OpenTelemetry Ingestion via navigator.sendBeacon
-    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+    // 3. Dispatch to Server OpenTelemetry Ingestion via navigator.sendBeacon.
+    // The endpoint only accepts signed-in admins, so skip it on the public sign-in pages (it would just 401).
+    const isPublicAuthPage = /^\/(login|register|verify-email|forgot-password|forget-password|reset-password)(\/|$)/.test(payload.path);
+    if (isPublicAuthPage) {
+      // no server upload before sign-in
+    } else if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
       const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
       navigator.sendBeacon('/api/telemetry/vitals', blob);
     } else if (typeof fetch !== 'undefined') {
