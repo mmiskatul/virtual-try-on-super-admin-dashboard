@@ -35,13 +35,8 @@ import {
 import { Button } from '../../components/ui/button';
 
 export type GovernanceAreaTab =
-  | 'system-overview'
   | 'health'
-  | 'services'
-  | 'queues'
-  | 'jobs'
   | 'logs'
-  | 'storage'
   | 'backups'
   | 'security-overview'
   | 'events'
@@ -66,7 +61,7 @@ export type GovernanceAreaTab =
   | 'cfg-uploads';
 
 export function SystemSecurityGovernanceView({
-  initialTab = 'system-overview',
+  initialTab = 'health',
 }: {
   initialTab?: GovernanceAreaTab;
 }) {
@@ -163,7 +158,6 @@ export function SystemSecurityGovernanceView({
         <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:flex-wrap text-xs">
           {[
             ['Health & SMTP/DB', '/admin/system/health'],
-            ['Queues & Jobs', '/admin/system/queues'],
             ['Logs', '/admin/system/logs'],
             ['Backups', '/admin/system/backups'],
             ['Security Events', '/admin/security/events'],
@@ -193,13 +187,13 @@ export function SystemSecurityGovernanceView({
               <MetricCard label="Maintenance Mode" value={settings.maintenanceMode.enabled ? 'ENABLED' : 'OFF'} icon={<AlertTriangle className="w-4 h-4" />} />
             </div>
 
-            {(tab === 'system-overview' || tab === 'health' || tab === 'services' || tab === 'storage') && (
+            {tab === 'health' && (
               <SectionPanel title="Live SMTP & Supabase / PostgreSQL Infrastructure Configuration" subtitle="Direct connection to /api/v1/admin/infrastructure/*">
                 <InfrastructureConfig />
               </SectionPanel>
             )}
 
-            {(tab === 'queues' || tab === 'jobs' || tab === 'logs') && (
+            {tab === 'logs' && (
               <SectionPanel title="Masked Application Logs & Background Workers" subtitle="PII tokens, passwords, and API secrets are redacted automatically.">
                 <div className="space-y-2 font-mono text-[11px] overflow-x-auto">
                   <div className="p-2.5 rounded bg-slate-900 text-emerald-400 break-all">

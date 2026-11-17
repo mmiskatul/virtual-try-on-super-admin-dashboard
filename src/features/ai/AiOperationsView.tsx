@@ -37,17 +37,11 @@ export type AiOrTryOnTab =
   | 'providers'
   | 'models'
   | 'configuration'
-  | 'usage'
   | 'costs'
-  | 'performance'
-  | 'credits'
-  | 'tryon-overview'
   | 'jobs'
   | 'queue'
   | 'failed'
-  | 'tryon-analytics'
-  | 'quality'
-  | 'policies';
+  | 'quality';
 
 export function AiOperationsView({
   initialTab = 'ai-overview',
@@ -211,7 +205,7 @@ export function AiOperationsView({
   }, [failedJobs]);
 
   return (
-    <AdminPermissionGate module={tab.startsWith('tryon') || ['jobs', 'queue', 'failed', 'quality', 'policies'].includes(tab) ? 'tryon' : 'ai'} action="view">
+    <AdminPermissionGate module={['jobs', 'queue', 'failed', 'quality'].includes(tab) ? 'tryon' : 'ai'} action="view">
       <div className="space-y-6">
         <AdminPageHeader
           eyebrow="AI Infrastructure & Virtual Try-On Ops"
@@ -225,8 +219,7 @@ export function AiOperationsView({
             ['providers', 'Live AI Keys & Providers', '/admin/ai/providers'],
             ['models', 'Model Registry', '/admin/ai/models'],
             ['configuration', 'Routing Policy', '/admin/ai/configuration'],
-            ['costs', 'Cost Estimates', '/admin/ai/costs'],
-            ['credits', 'Credit Ledger', '/admin/ai/credits'],
+            ['costs', 'Costs & Credits', '/admin/ai/costs'],
             ['jobs', 'Try-On Jobs', '/admin/try-on/jobs'],
             ['queue', `Queue (${queueJobs.length})`, '/admin/try-on/queue'],
             ['failed', `Failures (${failedJobs.length})`, '/admin/try-on/failed'],
@@ -261,7 +254,7 @@ export function AiOperationsView({
           </SectionPanel>
         )}
 
-        {(tab === 'ai-overview' || tab === 'performance' || tab === 'usage') && (
+        {tab === 'ai-overview' && (
           <SectionPanel title="Configured Inference Providers" subtitle="Real provider key readiness vs active model routing fallback chain">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               {safeProviders.map((pr) => (
@@ -405,7 +398,7 @@ export function AiOperationsView({
           </SectionPanel>
         )}
 
-        {(tab === 'costs' || tab === 'credits') && (
+        {tab === 'costs' && (
           <div className="space-y-6">
             <InlineAlert tone="info">
               <span>
@@ -485,7 +478,7 @@ export function AiOperationsView({
           </div>
         )}
 
-        {(tab === 'tryon-overview' || tab === 'jobs' || tab === 'queue' || tab === 'failed' || tab === 'tryon-analytics') && (
+        {(tab === 'jobs' || tab === 'queue' || tab === 'failed') && (
           <SectionPanel
             title={tab === 'failed' ? 'Failed Generation Triage' : tab === 'queue' ? 'Active Generation Queue' : 'Virtual Try-On Operations'}
             subtitle="Customer uploaded images are redacted by default. Only operational metadata and failure codes display here."
@@ -594,7 +587,7 @@ export function AiOperationsView({
           </SectionPanel>
         )}
 
-        {(tab === 'quality' || tab === 'policies') && (
+        {tab === 'quality' && (
           <SectionPanel title="AI Output Quality & Privacy Governance">
             <InlineAlert tone="warning">
               <span>

@@ -28,7 +28,6 @@ import { Button } from '../../components/ui/button';
 
 export type FinanceTab =
   | 'overview'
-  | 'payments'
   | 'transactions'
   | 'invoices'
   | 'refunds'
@@ -120,7 +119,7 @@ export function FinanceBillingView({
           <MetricCard label="Open Reconciliations" value={unresolvedRecon} positive={unresolvedRecon === 0} icon={<RotateCcw className="w-4 h-4 text-amber-600" />} />
         </div>
 
-        {(tab === 'overview' || tab === 'payments' || tab === 'transactions' || tab === 'failed-payments') && (
+        {(tab === 'overview' || tab === 'transactions' || tab === 'failed-payments') && (
           <SectionPanel title={tab === 'failed-payments' ? 'Failed Payment Incidents' : 'Payment Transactions Ledger'}>
             <div className="sm:hidden space-y-2.5 text-xs">
               {(tab === 'failed-payments' ? safeTx.filter((t) => t.status === 'FAILED') : safeTx).map((t) => (

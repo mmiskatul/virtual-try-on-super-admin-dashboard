@@ -648,14 +648,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               { href: '/admin', label: 'Overview', Icon: LayoutDashboard },
               { href: '/admin/tenants', label: 'Tenants', Icon: Building2 },
               { href: '/admin/marketplace/products', label: 'Moderation', Icon: Globe },
-              { href: '/admin/try-on', label: 'Try-On', Icon: Cpu },
+              { href: '/admin/try-on/jobs', label: 'Try-On', Icon: Cpu },
               { href: '/admin/system/health', label: 'System', Icon: ShieldCheck },
             ] as const
           ).map(({ href, label, Icon }) => {
             const active =
               href === '/admin'
                 ? pathname === '/admin'
-                : pathname?.startsWith(href);
+                : pathname?.startsWith(href.startsWith('/admin/try-on') ? '/admin/try-on' : href);
             return (
               <Link
                 key={href}

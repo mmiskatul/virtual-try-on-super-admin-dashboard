@@ -20,6 +20,18 @@ const nextConfig = {
       { source: '/admin/security/access', destination: '/admin/staff/permissions', permanent: false },
       { source: '/admin/users/roles', destination: '/admin/staff/roles', permanent: false },
       { source: '/admin/tenants/:id/overview', destination: '/admin/tenants/:id', permanent: false },
+      { source: '/admin/system', destination: '/admin/system/health', permanent: false },
+      { source: '/admin/system/services', destination: '/admin/system/health', permanent: false },
+      { source: '/admin/system/storage', destination: '/admin/system/health', permanent: false },
+      { source: '/admin/system/queues', destination: '/admin/system/logs', permanent: false },
+      { source: '/admin/system/jobs', destination: '/admin/system/logs', permanent: false },
+      { source: '/admin/ai/performance', destination: '/admin/ai', permanent: false },
+      { source: '/admin/ai/usage', destination: '/admin/ai', permanent: false },
+      { source: '/admin/ai/credits', destination: '/admin/ai/costs', permanent: false },
+      { source: '/admin/try-on', destination: '/admin/try-on/jobs', permanent: false },
+      { source: '/admin/try-on/analytics', destination: '/admin/try-on/jobs', permanent: false },
+      { source: '/admin/try-on/policies', destination: '/admin/try-on/quality', permanent: false },
+      { source: '/admin/finance/payments', destination: '/admin/finance/transactions', permanent: false },
     ];
   },
   images: {
