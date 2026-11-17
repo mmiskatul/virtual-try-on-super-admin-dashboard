@@ -194,7 +194,7 @@ function appendPlatformAudit(
       details,
       reason,
       correlationId: `corr_${Math.random().toString(36).slice(2, 8)}`,
-      timestamp: new Date().toLocaleString(),
+      timestamp: new Date().toLocaleString('en-US'),
     },
     ...state.auditEvents,
   ].slice(0, 150);
@@ -224,7 +224,7 @@ export const platformSlice = createSlice({
       state.isLiveBackend = action.payload.live;
       state.backendHealth = action.payload.health ?? state.backendHealth;
       state.backendLatencyMs = action.payload.latencyMs ?? state.backendLatencyMs;
-      state.lastSyncedAt = new Date().toLocaleTimeString();
+      state.lastSyncedAt = new Date().toLocaleTimeString('en-US');
     },
     setBackendTelemetry: (state, action: PayloadAction<{ overview: any; aiMetrics: any }>) => {
       state.backendTelemetry = action.payload;
@@ -254,7 +254,7 @@ export const platformSlice = createSlice({
             timeline: [
               {
                 label: 'Live backend record synchronized',
-                at: new Date().toLocaleDateString(),
+                at: new Date().toLocaleDateString('en-US'),
                 category: 'SYSTEM',
               },
             ],
@@ -298,7 +298,7 @@ export const platformSlice = createSlice({
         tenantContext: l.tenantId || undefined,
         details: typeof l.details === 'string' ? l.details : JSON.stringify(l.details || {}),
         correlationId: l.correlationId || `corr_live_${i}`,
-        timestamp: l.timestamp ? new Date(l.timestamp).toLocaleString() : 'Live',
+        timestamp: l.timestamp ? new Date(l.timestamp).toLocaleString('en-US') : 'Live',
       }));
     },
     setLiveGenerations: (state, action: PayloadAction<any[]>) => {
@@ -319,7 +319,7 @@ export const platformSlice = createSlice({
         retryCount: Number(j.retryCount || 0),
         errorMessage: j.error || undefined,
         privateMediaRedacted: true,
-        createdAt: j.createdAt ? new Date(j.createdAt).toLocaleString() : '',
+        createdAt: j.createdAt ? new Date(j.createdAt).toLocaleString('en-US') : '',
       }));
       const liveIds = new Set(mapped.map((m) => m.id));
       state.tryOnJobs = [...mapped, ...state.tryOnJobs.filter((d) => !liveIds.has(d.id))];
@@ -451,7 +451,7 @@ export const platformSlice = createSlice({
           timeline: [
             {
               label: `Lifecycle moved to ${lifecycleStatus}: ${reason}`,
-              at: new Date().toLocaleString(),
+              at: new Date().toLocaleString('en-US'),
               category: 'LIFECYCLE',
             },
             ...t.timeline,
@@ -492,7 +492,7 @@ export const platformSlice = createSlice({
                   id: `n_${Date.now()}`,
                   author: state.adminEmail,
                   note,
-                  at: new Date().toLocaleString(),
+                  at: new Date().toLocaleString('en-US'),
                 },
                 ...t.internalNotes,
               ],
@@ -518,7 +518,7 @@ export const platformSlice = createSlice({
       const { tenantId, mode, reason } = action.payload;
       const tenant = state.tenants.find((t) => t.id === tenantId);
       if (!tenant) return;
-      const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toLocaleTimeString();
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toLocaleTimeString('en-US');
       state.impersonation = {
         active: true,
         tenantId: tenant.id,
@@ -526,7 +526,7 @@ export const platformSlice = createSlice({
         mode,
         reason,
         adminEmail: state.adminEmail,
-        startedAt: new Date().toLocaleTimeString(),
+        startedAt: new Date().toLocaleTimeString('en-US'),
         expiresAt,
       };
       appendPlatformAudit(
@@ -678,7 +678,7 @@ export const platformSlice = createSlice({
           reason,
           actor: state.adminEmail,
           referenceId: `REF-${Date.now().toString().slice(-6)}`,
-          createdAt: new Date().toLocaleString(),
+          createdAt: new Date().toLocaleString('en-US'),
         },
         ...state.creditLedger,
       ];
@@ -755,7 +755,7 @@ export const platformSlice = createSlice({
     ) => {
       const { id, updates } = action.payload;
       state.tickets = state.tickets.map((t) =>
-        t.id === id ? { ...t, ...updates, updatedAt: new Date().toLocaleString() } : t
+        t.id === id ? { ...t, ...updates, updatedAt: new Date().toLocaleString('en-US') } : t
       );
       appendPlatformAudit(state, 'TICKET_UPDATED', id, `Modified ${Object.keys(updates).join(', ')}`);
     },
@@ -775,10 +775,10 @@ export const platformSlice = createSlice({
                   role: state.activeRole,
                   text,
                   internal,
-                  at: new Date().toLocaleString(),
+                  at: new Date().toLocaleString('en-US'),
                 },
               ],
-              updatedAt: new Date().toLocaleString(),
+              updatedAt: new Date().toLocaleString('en-US'),
             }
           : t
       );
@@ -845,7 +845,7 @@ export const platformSlice = createSlice({
           ? {
               ...w,
               retryCount: w.retryCount + 1,
-              lastAttemptAt: `${new Date().toLocaleTimeString()} (queued)`,
+              lastAttemptAt: `${new Date().toLocaleTimeString('en-US')} (queued)`,
             }
           : w
       );

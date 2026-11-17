@@ -497,7 +497,7 @@ export function TenantGovernanceView({
                   <MetricCard label="Catalog Products" value={tenant.productsCount} />
                   <MetricCard label="AI Try-On Used / Cap" value={`${tenant.tryOnUsed} / ${tenant.tryOnQuota}`} />
                   <MetricCard label="Storage (MB)" value={`${tenant.storageUsedMb} / ${tenant.storageLimitMb}`} />
-                  <MetricCard label="30d API Requests" value={tenant.apiRequests30d.toLocaleString()} />
+                  <MetricCard label="30d API Requests" value={tenant.apiRequests30d.toLocaleString('en-US')} />
                 </div>
               )}
 
@@ -753,12 +753,12 @@ export function TenantGovernanceView({
                         <div className="text-right">
                           <span className="text-slate-400 block">Plan & GMV</span>
                           <span className="font-bold text-slate-900 block">{t.plan} (${t.monthlySpend}/mo)</span>
-                          <span className="text-slate-600 font-semibold tabular-nums">GMV ${t.gmv.toLocaleString()}</span>
+                          <span className="text-slate-600 font-semibold tabular-nums">GMV ${t.gmv.toLocaleString('en-US')}</span>
                         </div>
                       </div>
                       <div className="space-y-1">
                         <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-slate-500">AI Credits: <strong className="text-slate-800">{t.tryOnUsed.toLocaleString()} / {t.tryOnQuota.toLocaleString()}</strong></span>
+                          <span className="text-slate-500">AI Credits: <strong className="text-slate-800">{t.tryOnUsed.toLocaleString('en-US')} / {t.tryOnQuota.toLocaleString('en-US')}</strong></span>
                           <span className="text-slate-500">{t.productsCount} SKUs / {t.marketplacePublishedCount} pub</span>
                         </div>
                         <div className="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
@@ -850,7 +850,7 @@ export function TenantGovernanceView({
                         </td>
                         <td className="py-3 pr-4">
                           <p className="font-semibold text-slate-800">
-                            {t.tryOnUsed.toLocaleString()} / {t.tryOnQuota.toLocaleString()}
+                            {t.tryOnUsed.toLocaleString('en-US')} / {t.tryOnQuota.toLocaleString('en-US')}
                           </p>
                           <div className="w-24 h-1.5 rounded-full bg-slate-100 mt-1 overflow-hidden">
                             <div
@@ -859,7 +859,7 @@ export function TenantGovernanceView({
                             />
                           </div>
                         </td>
-                        <td className="py-3 pr-4 font-bold text-slate-900">৳{t.gmv.toLocaleString()}</td>
+                        <td className="py-3 pr-4 font-bold text-slate-900">৳{t.gmv.toLocaleString('en-US')}</td>
                         <td className="py-3 pr-4">
                           <StatusPill status={t.lifecycleStatus} />
                         </td>

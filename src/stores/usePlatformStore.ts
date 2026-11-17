@@ -206,13 +206,13 @@ const platformBoundActions = {
           id: `note_${Date.now()}`,
           author: adminEmail,
           note: 'Tenant provisioned via Super Admin invitation workflow (no password created by staff).',
-          at: new Date().toLocaleString(),
+          at: new Date().toLocaleString('en-US'),
         },
       ],
       timeline: [
         {
           label: 'Created tenant workspace & dispatched owner invite',
-          at: new Date().toLocaleString(),
+          at: new Date().toLocaleString('en-US'),
           category: 'LIFECYCLE',
         },
       ],

@@ -216,7 +216,7 @@ export function SubscriptionsPlansView({
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <MetricCard label="Active MRR" value={`৳${activeMrr.toLocaleString()}`} icon={<TrendingUp className="w-4 h-4 text-emerald-600" />} />
+          <MetricCard label="Active MRR" value={`৳${activeMrr.toLocaleString('en-US')}`} icon={<TrendingUp className="w-4 h-4 text-emerald-600" />} />
           <MetricCard label="Configured Plans" value={safePlans.length} icon={<Layers className="w-4 h-4" />} />
           <MetricCard label="Active Trials" value={safeSubs.filter((s) => s.status === 'TRIALING').length} icon={<Sparkles className="w-4 h-4 text-amber-600" />} />
           <MetricCard label="Past Due / Cancelled" value={safeSubs.filter((s) => s.status === 'PAST_DUE' || s.status === 'CANCELLED').length} icon={<CreditCard className="w-4 h-4 text-rose-600" />} />
@@ -236,8 +236,8 @@ export function SubscriptionsPlansView({
                   <span className="text-xs font-normal text-slate-500">/mo (৳{p.annualPrice}/yr)</span>
                 </p>
                 <div className="space-y-1 text-xs text-slate-600">
-                  <p>Max Products: <strong>{p.limits.maxProducts.toLocaleString()}</strong></p>
-                  <p>Monthly AI Credits: <strong>{p.limits.monthlyAiCredits.toLocaleString()}</strong></p>
+                  <p>Max Products: <strong>{p.limits.maxProducts.toLocaleString('en-US')}</strong></p>
+                  <p>Monthly AI Credits: <strong>{p.limits.monthlyAiCredits.toLocaleString('en-US')}</strong></p>
                   <p>Team Seats: <strong>{p.limits.maxTeamSeats}</strong> • Trial: <strong>{p.trialDays}d</strong></p>
                 </div>
                 <div className="pt-2 border-t border-slate-100 grid grid-cols-1 min-[360px]:grid-cols-2 gap-2 text-xs">

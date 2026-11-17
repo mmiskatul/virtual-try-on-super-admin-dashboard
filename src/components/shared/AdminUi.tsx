@@ -410,7 +410,7 @@ export function SvgTrendChart({
           <div key={idx} className="flex flex-col items-center justify-end h-full gap-1.5 group">
             <span className="text-[10px] font-bold text-slate-500">
               {prefix}
-              {val.toLocaleString()}
+              {val.toLocaleString('en-US')}
             </span>
             <div className="w-full max-w-[44px] h-full flex items-end bg-slate-100 rounded-t-lg overflow-hidden">
               <div
