@@ -1,6 +1,6 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { isAllowedAdminRole } from './portal-auth';
+import { ADMIN_NEXTAUTH_COOKIE, isAllowedAdminRole } from './portal-auth';
 
 const BACKEND_API_URL =
   process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:4000';
@@ -159,9 +159,7 @@ export const authOptions: NextAuthOptions = {
   useSecureCookies: useSecureNextAuthCookies,
   cookies: {
     sessionToken: {
-      name: useSecureNextAuthCookies
-        ? '__Secure-next-auth.session-token'
-        : 'next-auth.session-token',
+      name: ADMIN_NEXTAUTH_COOKIE,
       options: {
         httpOnly: true,
         sameSite: 'lax',

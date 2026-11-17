@@ -4,6 +4,7 @@ import { getToken } from 'next-auth/jwt';
 import { trace } from '@opentelemetry/api';
 import {
   ADMIN_ACCESS_COOKIE,
+  ADMIN_NEXTAUTH_COOKIE,
   ADMIN_REFRESH_COOKIE,
   ADMIN_SESSION_COOKIE,
   isAllowedAdminRole,
@@ -19,7 +20,7 @@ export const runtime = 'edge';
  * and correlates them into OpenTelemetry spans for Datadog RUM / New Relic observability.
  */
 export async function POST(request: NextRequest) {
-  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET, cookieName: ADMIN_NEXTAUTH_COOKIE });
   const userId = typeof token?.id === 'string' ? token.id : typeof token?.sub === 'string' ? token.sub : '';
   const accessToken = request.cookies.get(ADMIN_ACCESS_COOKIE)?.value;
   const refreshToken = request.cookies.get(ADMIN_REFRESH_COOKIE)?.value;

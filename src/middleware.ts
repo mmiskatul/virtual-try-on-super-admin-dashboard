@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import {
   ADMIN_ACCESS_COOKIE,
+  ADMIN_NEXTAUTH_COOKIE,
   ADMIN_REFRESH_COOKIE,
   ADMIN_SESSION_COOKIE,
   buildAdminCookieHeader,
@@ -240,8 +241,7 @@ export async function middleware(request: NextRequest) {
       res.cookies.delete(ADMIN_ACCESS_COOKIE);
       res.cookies.delete(ADMIN_REFRESH_COOKIE);
       res.cookies.delete(ADMIN_SESSION_COOKIE);
-      res.cookies.delete('next-auth.session-token');
-      res.cookies.delete('__Secure-next-auth.session-token');
+      res.cookies.delete(ADMIN_NEXTAUTH_COOKIE);
     }
     for (const sc of setCookiesToForward) {
       res.headers.append('set-cookie', sc);
@@ -263,6 +263,7 @@ export async function middleware(request: NextRequest) {
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
+    cookieName: ADMIN_NEXTAUTH_COOKIE,
   });
 
   const nextAuthUserId =
@@ -351,8 +352,7 @@ export async function middleware(request: NextRequest) {
       Boolean(accessCookie) ||
       Boolean(refreshCookie) ||
       Boolean(sessionCookie) ||
-      request.cookies.has('next-auth.session-token') ||
-      request.cookies.has('__Secure-next-auth.session-token')
+      request.cookies.has(ADMIN_NEXTAUTH_COOKIE)
     ) {
       clearStaleAuthCookies = true;
     }

@@ -2,6 +2,15 @@ export const ADMIN_ACCESS_COOKIE = 'vtry_admin_access';
 export const ADMIN_REFRESH_COOKIE = 'vtry_admin_refresh';
 export const ADMIN_SESSION_COOKIE = 'vtry_admin_sid';
 
+/**
+ * NextAuth session cookie for THIS app only. Browsers share cookies across ports on localhost, so reusing the
+ * default "next-auth.session-token" lets the brand dashboard and marketplace overwrite it (and vice versa),
+ * which shows up as "JWEDecryptionFailed" because each app encrypts with its own secret.
+ */
+const useSecureSessionCookie =
+  process.env.NODE_ENV === 'production' || Boolean(process.env.NEXTAUTH_URL?.startsWith('https://'));
+export const ADMIN_NEXTAUTH_COOKIE = `${useSecureSessionCookie ? '__Secure-' : ''}vtry-admin.session-token`;
+
 export const ADMIN_ALLOWED_ROLES = new Set<string>([
   'SUPER_ADMIN',
   'PLATFORM_OPERATIONS_ADMIN',
