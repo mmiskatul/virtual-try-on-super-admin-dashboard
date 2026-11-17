@@ -89,13 +89,17 @@ export function GoogleSignInButton({ onCredential, disabled = false }: Props) {
 
   return (
     <div className="space-y-2">
+      {state === 'loading' && (
+        <div className="w-full min-h-[44px] flex items-center justify-center">
+          <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
+        </div>
+      )}
+      {/* Google owns everything inside this div, so React must never render children into it. */}
       <div
         ref={holder}
-        className={`w-full min-h-[44px] flex items-center justify-center ${disabled ? 'pointer-events-none opacity-60' : ''}`}
+        className={`w-full flex items-center justify-center ${state === 'ready' ? 'min-h-[44px]' : 'hidden'} ${disabled ? 'pointer-events-none opacity-60' : ''}`}
         aria-label="Continue with Google"
-      >
-        {state === 'loading' && <Loader2 className="w-4 h-4 animate-spin text-gray-500" />}
-      </div>
+      />
       {state === 'off' && (
         <p className="text-[11px] text-amber-700 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 leading-relaxed">
           Google sign-in is not set up yet. Add <code>GOOGLE_CLIENT_ID</code> and your email as <code>SEED_ADMIN_EMAIL</code> to the backend settings.

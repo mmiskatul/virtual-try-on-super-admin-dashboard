@@ -66,6 +66,8 @@ function createContentSecurityPolicy(nonce: string) {
     default-src 'self';
     script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${isDev ? "'unsafe-eval'" : ''} https:;
     style-src 'self' 'nonce-${nonce}' 'unsafe-inline' https:;
+    style-src-attr 'unsafe-inline';
+    style-src-elem 'self' 'unsafe-inline' https://accounts.google.com;
     img-src 'self' blob: data: https://images.unsplash.com https:;
     font-src 'self' data: https:;
     connect-src 'self' http://localhost:* ws://localhost:* https:;

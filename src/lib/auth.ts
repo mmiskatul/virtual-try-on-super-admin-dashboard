@@ -106,7 +106,47 @@ export const authOptions: NextAuthOptions = {
           emailVerified: Boolean(data.admin.emailVerified),
         };
       }
-    })
+    }),
+    // Google sign-in: the backend verifies the Google token and only accepts the seeded admin email(s).
+    CredentialsProvider({
+      id: 'google-admin',
+      name: 'Super Admin Google Sign-In',
+      credentials: { idToken: { label: 'Google ID token', type: 'text' } },
+      async authorize(credentials) {
+        if (!credentials?.idToken) {
+          throw new Error('Google sign-in token is missing.');
+        }
+        let response: Response;
+        try {
+          response = await fetch(`${BACKEND_API_URL}/api/v1/admin/auth/oauth-google`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Auth-Portal': 'admin',
+              'X-Auth-Transport': 'cookie',
+            },
+            body: JSON.stringify({ idToken: credentials.idToken }),
+          });
+        } catch {
+          throw new Error('SERVICE_UNAVAILABLE');
+        }
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data?.admin) {
+          throw new Error(data?.message || 'This Google account is not authorised for the Super Admin console.');
+        }
+        if (!PLATFORM_ADMIN_ROLES.has(data.admin.role || '')) {
+          throw new Error('Access restricted to Platform Super Admins only.');
+        }
+        return {
+          id: data.admin.id,
+          name: data.admin.name,
+          email: data.admin.email,
+          image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+          role: data.admin.role || 'SUPER_ADMIN',
+          emailVerified: Boolean(data.admin.emailVerified),
+        };
+      },
+    }),
   ],
   pages: {
     signIn: '/login',
