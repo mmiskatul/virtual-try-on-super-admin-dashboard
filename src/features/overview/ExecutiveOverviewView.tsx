@@ -34,24 +34,8 @@ import {
 } from '../../components/shared/AdminUi';
 import { Button } from '../../components/ui/button';
 
-export type OverviewOrAnalyticsTab =
-  | 'executive'
-  | 'overview'
-  | 'reports'
-  | 'analytics'
-  | 'revenue'
-  | 'tenants'
-  | 'subscriptions'
-  | 'ai'
-  | 'marketplace'
-  | 'customers'
-  | 'platform';
 
-export function ExecutiveOverviewView({
-  mode = 'executive',
-}: {
-  mode?: OverviewOrAnalyticsTab;
-}) {
+export function ExecutiveOverviewView() {
   const mounted = useMounted();
   const { syncNow } = usePlatformSync();
   const isLiveBackend = usePlatformStore((s) => s.isLiveBackend);
@@ -145,15 +129,11 @@ export function ExecutiveOverviewView({
   };
 
   return (
-    <AdminPermissionGate module={mode === 'executive' || mode === 'overview' ? 'overview' : 'analytics'} action="view">
+    <AdminPermissionGate module="overview" action="view">
       <div className="space-y-6">
         <AdminPageHeader
-          eyebrow={mode === 'executive' ? 'SaaS Executive Control Plane' : `Analytics / ${mode}`}
-          title={
-            mode === 'executive'
-              ? 'Platform Governance & Operations'
-              : `Platform Analytics — ${mode.charAt(0).toUpperCase() + mode.slice(1)}`
-          }
+          eyebrow="SaaS Executive Control Plane"
+          title="Platform Governance & Operations"
           subtitle="Unified visibility into multi-tenant storefronts, subscription MRR, AI inference pipelines, marketplace moderation, and live infrastructure health."
           actions={
             <>
@@ -176,27 +156,6 @@ export function ExecutiveOverviewView({
           }
         />
 
-        {/* Quick Navigation Strip for Analytics modes */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1 text-xs">
-          {[
-            ['Executive', '/admin'],
-            ['Revenue', '/admin/analytics/revenue'],
-            ['Tenants', '/admin/analytics/tenants'],
-            ['Subscriptions', '/admin/analytics/subscriptions'],
-            ['AI Costs', '/admin/analytics/ai'],
-            ['Marketplace', '/admin/analytics/marketplace'],
-            ['Customers', '/admin/analytics/customers'],
-            ['Platform Metrics', '/admin/analytics/platform'],
-          ].map(([label, href]) => (
-            <Link
-              key={href}
-              href={href}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 font-semibold text-slate-700"
-            >
-              {label}
-            </Link>
-          ))}
-        </div>
 
         {/* 12 Executive Platform KPI Cards (Section 5A) */}
         <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-3.5">

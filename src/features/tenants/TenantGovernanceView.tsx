@@ -302,7 +302,7 @@ export function TenantGovernanceView({
     const tenantAudit = auditEvents.filter((a) => a.tenantContext === tenantId);
 
     const DETAIL_TABS: Array<{ id: TenantSubTab; label: string; href: string }> = [
-      { id: 'overview', label: 'Overview', href: `/admin/tenants/${tenantId}/overview` },
+      { id: 'overview', label: 'Overview', href: `/admin/tenants/${tenantId}` },
       { id: 'users', label: `Users (${tenantUsers.length})`, href: `/admin/tenants/${tenantId}/users` },
       { id: 'subscription', label: 'Subscription & Billing', href: `/admin/tenants/${tenantId}/subscription` },
       { id: 'usage', label: 'Usage & Quotas', href: `/admin/tenants/${tenantId}/usage` },

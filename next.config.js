@@ -11,6 +11,17 @@ const nextConfig = {
     taint: true,
     instrumentationHook: true,
   },
+  // Old URLs for pages that duplicated another page; keep bookmarks working.
+  async redirects() {
+    return [
+      { source: '/admin/overview', destination: '/admin', permanent: false },
+      { source: '/admin/reports', destination: '/admin', permanent: false },
+      { source: '/admin/analytics/:path*', destination: '/admin', permanent: false },
+      { source: '/admin/security/access', destination: '/admin/staff/permissions', permanent: false },
+      { source: '/admin/users/roles', destination: '/admin/staff/roles', permanent: false },
+      { source: '/admin/tenants/:id/overview', destination: '/admin/tenants/:id', permanent: false },
+    ];
+  },
   images: {
     remotePatterns: [
       {

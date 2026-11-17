@@ -654,7 +654,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           ).map(({ href, label, Icon }) => {
             const active =
               href === '/admin'
-                ? pathname === '/admin' || pathname === '/admin/overview'
+                ? pathname === '/admin'
                 : pathname?.startsWith(href);
             return (
               <Link

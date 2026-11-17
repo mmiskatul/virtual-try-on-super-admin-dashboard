@@ -35,9 +35,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     icon: 'LayoutDashboard',
     items: [
       { label: 'Executive Dashboard', href: '/admin', module: 'overview' },
-      { label: 'Platform Overview', href: '/admin/overview', module: 'overview' },
-      { label: 'Executive Reports', href: '/admin/reports', module: 'analytics' },
-      { label: 'Business Analytics', href: '/admin/analytics', module: 'analytics' },
     ],
   },
   {
@@ -55,7 +52,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     icon: 'Users',
     items: [
       { label: 'All Users', href: '/admin/users', module: 'users' },
-      { label: 'User Roles', href: '/admin/users/roles', module: 'users' },
       { label: 'Pending Invitations', href: '/admin/users/invitations', module: 'users' },
       { label: 'Platform Staff', href: '/admin/staff', module: 'staff' },
       { label: 'Staff Roles', href: '/admin/staff/roles', module: 'staff' },
@@ -218,13 +214,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { label: 'Marketplace Policy', href: '/admin/configuration/marketplace', module: 'configuration' },
       { label: 'AI Configuration', href: '/admin/configuration/ai', module: 'configuration' },
       { label: 'Upload Restrictions', href: '/admin/configuration/uploads', module: 'configuration' },
-      { label: 'Revenue Reports', href: '/admin/analytics/revenue', module: 'analytics' },
-      { label: 'Tenant Analytics', href: '/admin/analytics/tenants', module: 'analytics' },
-      { label: 'Subscription Analytics', href: '/admin/analytics/subscriptions', module: 'analytics' },
-      { label: 'AI Cost Reports', href: '/admin/analytics/ai', module: 'analytics' },
-      { label: 'Marketplace Analytics', href: '/admin/analytics/marketplace', module: 'analytics' },
-      { label: 'Customer Analytics', href: '/admin/analytics/customers', module: 'analytics' },
-      { label: 'Platform Metrics', href: '/admin/analytics/platform', module: 'analytics' },
     ],
   },
 ];
