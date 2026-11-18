@@ -22,6 +22,7 @@ import { usePlatformStore } from '../../stores/usePlatformStore';
 import { useAdminUiStore } from '../../stores/useAdminUiStore';
 import { useMounted } from '../../hooks/useMounted';
 import { usePlatformSync } from '../../hooks/usePlatformSync';
+import { deriveAlerts } from '../../lib/derivedAlerts';
 import {
   AdminPageHeader,
   AdminPermissionGate,
@@ -50,8 +51,6 @@ export function ExecutiveOverviewView() {
   const tryOnJobs = usePlatformStore((s) => s.tryOnJobs);
   const modProducts = usePlatformStore((s) => s.modProducts);
   const auditEvents = usePlatformStore((s) => s.auditEvents);
-  const alerts = usePlatformStore((s) => s.alerts);
-  const updateAlertStatus = usePlatformStore((s) => s.updateAlertStatus);
 
   const showToast = useAdminUiStore((s) => s.showToast);
   const hideToast = useAdminUiStore((s) => s.hideToast);
@@ -65,7 +64,22 @@ export function ExecutiveOverviewView() {
   const safeJobs = mounted ? tryOnJobs : [];
   const safeMod = mounted ? modProducts : [];
   const safeAudit = mounted ? auditEvents : [];
-  const safeAlerts = mounted ? alerts : [];
+  const tryOnJobsForAlerts = usePlatformStore((s) => s.tryOnJobs);
+  const ticketsForAlerts = usePlatformStore((s) => s.tickets);
+  const modProductsForAlerts = usePlatformStore((s) => s.modProducts);
+  const dataRequestsForAlerts = usePlatformStore((s) => s.dataRequests);
+  const transactionsForAlerts = usePlatformStore((s) => s.transactions);
+  const tenantsForAlerts = usePlatformStore((s) => s.tenants);
+  const safeAlerts = mounted
+    ? deriveAlerts({
+        tenants: tenantsForAlerts,
+        tryOnJobs: tryOnJobsForAlerts,
+        tickets: ticketsForAlerts,
+        modProducts: modProductsForAlerts,
+        dataRequests: dataRequestsForAlerts,
+        transactions: transactionsForAlerts,
+      })
+    : [];
 
   const liveOverview = backendTelemetry.overview;
   const totalBrands = liveOverview?.tenants?.total ?? safeTenants.length;
@@ -219,7 +233,7 @@ export function ExecutiveOverviewView() {
               <div className="flex flex-wrap items-center justify-between gap-2 py-1.5 border-b border-slate-100">
                 <span className="text-slate-500">Backend API Connection</span>
                 <span className="font-bold text-slate-900">
-                  {isLiveBackend ? 'Connected (:4000)' : 'Unauthenticated / Demo Fallback'}
+                  {isLiveBackend ? 'Connected (:4000)' : 'Not connected'}
                 </span>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-2 py-1.5 border-b border-slate-100">
@@ -275,35 +289,24 @@ export function ExecutiveOverviewView() {
             </div>
           </SectionPanel>
 
-          {/* Alerts & Action Center (Section 5I) */}
+          {/* Needs attention: computed from live data */}
           <SectionPanel
             className="lg:col-span-4"
-            title="Alerts & Action Center"
-            subtitle="Operational incidents requiring admin triage"
+            title="Needs Attention"
+            subtitle="Computed from live platform data"
           >
             <div className="space-y-2.5 text-xs">
+              {safeAlerts.length === 0 && (
+                <p className="p-3 rounded-lg bg-emerald-50 text-emerald-800 font-semibold">Nothing needs attention right now.</p>
+              )}
               {safeAlerts.map((al) => (
-                <div key={al.id} className="p-3 rounded-lg border border-slate-200 space-y-2">
+                <Link key={al.id} href={al.href} className="block p-3 rounded-lg border border-slate-200 space-y-1.5 hover:bg-slate-50">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <p className="font-bold text-slate-900 min-w-0 flex-1 break-words">{al.title}</p>
                     <StatusPill status={al.severity} />
                   </div>
                   <p className="text-slate-600 break-words">{al.details}</p>
-                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                    <span className="text-[10px] text-slate-400">Owner: {al.owner || 'Unassigned'}</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {al.status !== 'RESOLVED' && (
-                        <button
-                          type="button"
-                          onClick={() => updateAlertStatus(al.id, 'RESOLVED')}
-                          className="text-[11px] font-bold text-emerald-700 hover:underline"
-                        >
-                          Resolve
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                </Link>
               ))}
             </div>
           </SectionPanel>

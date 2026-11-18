@@ -10,7 +10,7 @@ import {
   PackageOpen,
 } from 'lucide-react';
 import { PlatformAction, PlatformModule } from '../../types';
-import { canAdminPerform, ROLE_METADATA } from '../../config/permissions';
+import { usePermissions } from '../../hooks/usePermissions';
 import { usePlatformStore } from '../../stores/usePlatformStore';
 import { Button } from '../ui/button';
 
@@ -231,10 +231,9 @@ export function AdminPermissionGate({
   action?: PlatformAction;
   children: React.ReactNode;
 }) {
-  const activeRole = usePlatformStore((s) => s.activeRole);
-  const roleOverrides = usePlatformStore((s) => s.roleOverrides);
+  const { can, roleLabel } = usePermissions();
 
-  const allowed = canAdminPerform(activeRole, module, action, roleOverrides);
+  const allowed = can(module, action);
   if (allowed) return <>{children}</>;
 
   return (
@@ -246,8 +245,7 @@ export function AdminPermissionGate({
         Permission Restricted for Current Admin Role
       </h3>
       <p className="text-xs text-slate-600 leading-relaxed">
-        Active role <strong>{ROLE_METADATA[activeRole]?.label || activeRole}</strong> lacks{' '}
-        <code>{action}</code> permission on module <code>{module}</code>. Backend RBAC and Super Admin UI gates enforce least-privilege access. Switch role or edit access under Staff &rarr; Permissions.
+        Your role <strong>{roleLabel}</strong> does not include <code>{action}</code> access to <code>{module}</code>. Roles are defined and enforced by the backend. Ask a Super Admin to assign you a different role.
       </p>
     </div>
   );

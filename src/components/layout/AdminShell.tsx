@@ -36,10 +36,11 @@ import {
   X,
 } from 'lucide-react';
 import { ADMIN_NAV_GROUPS } from '../../config/navigation';
-import { canAdminPerform, ROLE_METADATA } from '../../config/permissions';
+import { usePermissions } from '../../hooks/usePermissions';
 import { usePlatformStore } from '../../stores/usePlatformStore';
 import { useAdminUiStore } from '../../stores/useAdminUiStore';
 import { usePlatformSync } from '../../hooks/usePlatformSync';
+import { deriveAlerts } from '../../lib/derivedAlerts';
 import { useMounted } from '../../hooks/useMounted';
 import { ToastNotification } from '../ui/ToastNotification';
 
@@ -64,12 +65,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const mounted = useMounted();
   const { data: session } = useSession();
-  const { syncNow } = usePlatformSync();
+  const { syncNow } = usePlatformSync({ auto: true });
 
   const isLiveBackend = usePlatformStore((s) => s.isLiveBackend);
   const backendLatencyMs = usePlatformStore((s) => s.backendLatencyMs);
-  const activeRole = usePlatformStore((s) => s.activeRole);
-  const roleOverrides = usePlatformStore((s) => s.roleOverrides);
+  const { can, roleLabel } = usePermissions();
   const sidebarCollapsed = usePlatformStore((s) => s.sidebarCollapsed);
   const openGroups = usePlatformStore((s) => s.openGroups);
   const impersonation = usePlatformStore((s) => s.impersonation);
@@ -82,10 +82,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const tryOnJobs = usePlatformStore((s) => s.tryOnJobs);
   const modProducts = usePlatformStore((s) => s.modProducts);
   const tickets = usePlatformStore((s) => s.tickets);
-  const securityEvents = usePlatformStore((s) => s.securityEvents);
-  const alerts = usePlatformStore((s) => s.alerts);
+  const dataRequests = usePlatformStore((s) => s.dataRequests);
 
-  const setActiveRole = usePlatformStore((s) => s.setActiveRole);
   const toggleSidebarCollapsed = usePlatformStore((s) => s.toggleSidebarCollapsed);
   const toggleNavGroup = usePlatformStore((s) => s.toggleNavGroup);
   const endImpersonation = usePlatformStore((s) => s.endImpersonation);
@@ -108,19 +106,23 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       failedJobs: tryOnJobs.filter((j) => j.status === 'FAILED').length,
       openTickets: tickets.filter((t) => t.status === 'OPEN' || t.status === 'ESCALATED').length,
       moderationQueue: modProducts.filter((p) => p.moderationStatus === 'PENDING_REVIEW').length,
-      securityAlerts: securityEvents.filter((e) => e.status === 'OPEN').length,
     }),
-    [tenants, tryOnJobs, tickets, modProducts, securityEvents]
+    [tenants, tryOnJobs, tickets, modProducts]
+  );
+
+  const alerts = useMemo(
+    () => deriveAlerts({ tenants, tryOnJobs, tickets, modProducts, dataRequests, transactions }),
+    [tenants, tryOnJobs, tickets, modProducts, dataRequests, transactions]
   );
 
   const visibleGroups = useMemo(() => {
     return ADMIN_NAV_GROUPS.map((grp) => ({
       ...grp,
       items: grp.items.filter((item) =>
-        canAdminPerform(activeRole, item.module, 'view', roleOverrides)
+        can(item.module, 'view')
       ),
     })).filter((grp) => grp.items.length > 0);
-  }, [activeRole, roleOverrides]);
+  }, [can]);
 
   // Global search across 7 entity categories respecting active RBAC
   const searchResults = useMemo(() => {
@@ -128,7 +130,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     if (!q || q.length < 2) return [];
     const results: Array<{ category: string; label: string; sub: string; href: string }> = [];
 
-    if (canAdminPerform(activeRole, 'tenants', 'view', roleOverrides)) {
+    if (can('tenants', 'view')) {
       tenants
         .filter((t) => t.name.toLowerCase().includes(q) || t.id.toLowerCase().includes(q) || t.slug.includes(q))
         .slice(0, 3)
@@ -136,7 +138,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           results.push({ category: 'Tenant', label: t.name, sub: `${t.plan} • ${t.lifecycleStatus}`, href: `/admin/tenants/${t.id}` })
         );
     }
-    if (canAdminPerform(activeRole, 'users', 'view', roleOverrides)) {
+    if (can('users', 'view')) {
       users
         .filter((u) => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q))
         .slice(0, 3)
@@ -144,7 +146,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           results.push({ category: 'User', label: u.name, sub: `${u.email} • ${u.category}`, href: `/admin/users/${u.id}` })
         );
     }
-    if (canAdminPerform(activeRole, 'subscriptions', 'view', roleOverrides)) {
+    if (can('subscriptions', 'view')) {
       subscriptions
         .filter((s) => s.id.toLowerCase().includes(q) || s.tenantName.toLowerCase().includes(q))
         .slice(0, 2)
@@ -152,7 +154,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           results.push({ category: 'Subscription', label: s.id, sub: `${s.tenantName} • ${s.planName}`, href: `/admin/subscriptions/${s.id}` })
         );
     }
-    if (canAdminPerform(activeRole, 'finance', 'view', roleOverrides)) {
+    if (can('finance', 'view')) {
       transactions
         .filter((tx) => tx.id.toLowerCase().includes(q) || tx.tenantName.toLowerCase().includes(q))
         .slice(0, 2)
@@ -160,7 +162,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           results.push({ category: 'Transaction', label: tx.id, sub: `৳${tx.amount} • ${tx.status}`, href: `/admin/finance/transactions` })
         );
     }
-    if (canAdminPerform(activeRole, 'marketplace', 'view', roleOverrides)) {
+    if (can('marketplace', 'view')) {
       modProducts
         .filter((p) => p.productName.toLowerCase().includes(q) || p.brandName.toLowerCase().includes(q))
         .slice(0, 2)
@@ -168,7 +170,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           results.push({ category: 'Product', label: p.productName, sub: `${p.brandName} • ${p.moderationStatus}`, href: `/admin/marketplace/products/${p.productId}` })
         );
     }
-    if (canAdminPerform(activeRole, 'support', 'view', roleOverrides)) {
+    if (can('support', 'view')) {
       tickets
         .filter((tk) => tk.id.toLowerCase().includes(q) || tk.subject.toLowerCase().includes(q))
         .slice(0, 2)
@@ -176,7 +178,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           results.push({ category: 'Ticket', label: `${tk.id} — ${tk.subject}`, sub: `${tk.priority} • ${tk.status}`, href: `/admin/support/tickets/${tk.id}` })
         );
     }
-    if (canAdminPerform(activeRole, 'tryon', 'view', roleOverrides)) {
+    if (can('tryon', 'view')) {
       tryOnJobs
         .filter((j) => j.id.toLowerCase().includes(q) || j.productName.toLowerCase().includes(q))
         .slice(0, 2)
@@ -186,7 +188,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     }
 
     return results;
-  }, [searchQuery, activeRole, roleOverrides, tenants, users, subscriptions, transactions, modProducts, tickets, tryOnJobs]);
+  }, [searchQuery, can, tenants, users, subscriptions, transactions, modProducts, tickets, tryOnJobs]);
 
   const breadcrumbs = useMemo(() => {
     const parts = (pathname || '/admin').split('/').filter(Boolean);
@@ -200,7 +202,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     setSyncing(true);
     const live = await syncNow();
     setSyncing(false);
-    showToast(live ? 'Synchronized live platform data from :4000.' : 'Using local demo governance data.');
+    showToast(live ? 'Synchronized live platform data from :4000.' : 'Backend unreachable or not signed in — showing no live data.');
     setTimeout(hideToast, 3000);
   };
 
@@ -315,23 +317,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <>
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-slate-400">
-                  <span>Role Context</span>
-                  <span className="text-indigo-400 font-bold truncate">
-                    {ROLE_METADATA[activeRole]?.label || activeRole}
-                  </span>
+                  <span>Signed in as</span>
+                  <span className="text-indigo-400 font-bold truncate">{roleLabel}</span>
                 </div>
-                <select
-                  value={activeRole}
-                  onChange={(e) => setActiveRole(e.target.value)}
-                  aria-label="Preview RBAC Staff Role"
-                  className="xl:hidden w-full rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1.5 text-[11px] font-semibold text-slate-200"
-                >
-                  {Object.keys(ROLE_METADATA).map((rk) => (
-                    <option key={rk} value={rk}>
-                      Role: {ROLE_METADATA[rk].label}
-                    </option>
-                  ))}
-                </select>
               </div>
               <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-800/80">
                 <div className="min-w-0">
@@ -385,10 +373,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </div>
             <button
               type="button"
-              onClick={() => {
-                endImpersonation();
-                showToast('Exited controlled support view-as session.');
-                setTimeout(hideToast, 3000);
+              onClick={async () => {
+                if (await endImpersonation()) {
+                  showToast('Exited controlled support view-as session.');
+                  setTimeout(hideToast, 3000);
+                }
               }}
               className="px-3 py-1 rounded-md bg-white text-amber-900 font-bold text-[11px]"
             >
@@ -484,19 +473,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               {mobileSearchOpen ? <X className="w-4 h-4" /> : <Search className="w-4 h-4" />}
             </button>
 
-            {/* Role Preview Switcher */}
-            <select
-              value={activeRole}
-              onChange={(e) => setActiveRole(e.target.value)}
-              title="Preview RBAC Staff Role"
-              className="hidden xl:block rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700"
+            <span
+              title="Your role is assigned by the backend"
+              className="hidden xl:inline-flex items-center rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700"
             >
-              {Object.keys(ROLE_METADATA).map((rk) => (
-                <option key={rk} value={rk}>
-                  Role: {ROLE_METADATA[rk].label}
-                </option>
-              ))}
-            </select>
+              {roleLabel}
+            </span>
 
             {/* Quick Actions */}
             <div className="relative">
@@ -512,9 +494,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 <div className="absolute right-0 mt-2 w-52 max-w-[calc(100vw-1.5rem)] rounded-xl border border-slate-200 bg-white shadow-xl p-1.5 text-xs z-50">
                   <Link href="/admin/tenants/create" onClick={() => setShowQuickMenu(false)} className="block px-3 py-2 rounded-lg hover:bg-slate-50 font-semibold">
                     + Provision New Tenant
-                  </Link>
-                  <Link href="/admin/plans/create" onClick={() => setShowQuickMenu(false)} className="block px-3 py-2 rounded-lg hover:bg-slate-50 font-semibold">
-                    + Create Subscription Plan
                   </Link>
                   <Link href="/admin/marketplace/products" onClick={() => setShowQuickMenu(false)} className="block px-3 py-2 rounded-lg hover:bg-slate-50 font-semibold">
                     Review Moderation Queue
@@ -538,8 +517,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               title="Click to re-sync with :4000 backend"
             >
               <RefreshCw className={`w-3 h-3 ${syncing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{isLiveBackend ? `LIVE${backendLatencyMs ? ` (${backendLatencyMs}ms)` : ''}` : 'DEMO MODE'}</span>
-              <span className="sm:hidden">{isLiveBackend ? 'LIVE' : 'DEMO'}</span>
+              <span className="hidden sm:inline">{isLiveBackend ? `LIVE${backendLatencyMs ? ` (${backendLatencyMs}ms)` : ''}` : 'OFFLINE'}</span>
+              <span className="sm:hidden">{isLiveBackend ? 'LIVE' : 'OFFLINE'}</span>
             </button>
 
             {/* Notifications */}
@@ -550,25 +529,31 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 relative"
               >
                 <Bell className="w-4 h-4" />
-                {mounted && alerts.filter((a) => a.status !== 'RESOLVED').length > 0 && (
+                {mounted && alerts.length > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-600 text-white text-[9px] font-bold flex items-center justify-center">
-                    {alerts.filter((a) => a.status !== 'RESOLVED').length}
+                    {alerts.length}
                   </span>
                 )}
               </button>
               {showNotifs && (
                 <div className="absolute right-0 mt-2 w-[calc(100vw-1.5rem)] max-w-xs sm:w-80 rounded-xl border border-slate-200 bg-white shadow-xl p-3 space-y-2 z-50 text-xs">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                    <span className="font-bold text-slate-900">Platform Alert Center</span>
+                    <span className="font-bold text-slate-900">Needs Attention</span>
                     <button type="button" onClick={() => setShowNotifs(false)} className="text-slate-400">
                       Close
                     </button>
                   </div>
+                  {alerts.length === 0 && <p className="p-2.5 text-slate-500">Nothing needs attention right now.</p>}
                   {alerts.map((al) => (
-                    <div key={al.id} className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 space-y-0.5">
+                    <Link
+                      key={al.id}
+                      href={al.href}
+                      onClick={() => setShowNotifs(false)}
+                      className="block p-2.5 rounded-lg bg-slate-50 border border-slate-100 space-y-0.5 hover:bg-slate-100"
+                    >
                       <p className="font-bold text-slate-900">{al.title}</p>
                       <p className="text-slate-600">{al.details}</p>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}
@@ -677,7 +662,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <div className="bg-white rounded-xl border border-slate-200 max-w-md w-full p-5 space-y-3 text-xs">
             <h3 className="text-sm font-bold text-slate-900">Super Admin Control Plane Guide</h3>
             <p className="text-slate-600 leading-relaxed">
-              This portal controls multi-tenant brands, entitlement plans, billing reconciliation, AI model routing, moderation, support, and system security. Live API status shows <strong>LIVE</strong> when authenticated against <code>:4000</code> and switches cleanly to clearly marked <strong>DEMO MODE</strong> data where standalone endpoints are absent.
+              This portal controls multi-tenant brands, entitlement plans, billing, AI model routing, moderation, support, and system health. The header shows <strong>LIVE</strong> when authenticated against <code>:4000</code> and <strong>OFFLINE</strong> otherwise; changes are only saved while LIVE.
             </p>
             <button
               type="button"
