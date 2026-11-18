@@ -19,7 +19,7 @@ import { AiInfrastructure } from '../../components/modules/AiInfrastructure';
 import { usePlatformStore } from '../../stores/usePlatformStore';
 import { useAdminUiStore } from '../../stores/useAdminUiStore';
 import { useMounted } from '../../hooks/useMounted';
-import { canAdminPerform } from '../../config/permissions';
+import { usePermissions } from '../../hooks/usePermissions';
 import {
   AdminPageHeader,
   AdminPermissionGate,
@@ -53,10 +53,8 @@ export function AiOperationsView({
   jobId?: string;
 }) {
   const mounted = useMounted();
-  const activeRole = usePlatformStore((s) => s.activeRole);
-  const roleOverrides = usePlatformStore((s) => s.roleOverrides);
+  const { can } = usePermissions();
   const tenants = usePlatformStore((s) => s.tenants);
-  const aiProviders = usePlatformStore((s) => s.aiProviders);
   const aiModels = usePlatformStore((s) => s.aiModels);
   const aiRouting = usePlatformStore((s) => s.aiRouting);
   const tryOnJobs = usePlatformStore((s) => s.tryOnJobs);
@@ -83,10 +81,23 @@ export function AiOperationsView({
   const [routingDraft, setRoutingDraft] = useState(aiRouting);
   const [confirmRouting, setConfirmRouting] = useState(false);
 
-  const canConfigAi = canAdminPerform(activeRole, 'ai', 'configure', roleOverrides);
+  const canConfigAi = can('ai', 'configure');
   const safeJobs = mounted ? tryOnJobs : [];
   const safeModels = mounted ? aiModels : [];
-  const safeProviders = mounted ? aiProviders : [];
+  const safeProviders = React.useMemo(() => {
+    const byProvider = new Map<string, { id: string; models: string[]; active: number }>();
+    for (const m of safeModels) {
+      const row = byProvider.get(m.providerId) || { id: m.providerId, models: [], active: 0 };
+      row.models.push(m.name);
+      if (m.active) row.active += 1;
+      byProvider.set(m.providerId, row);
+    }
+    // keep the currently routed providers selectable even if they have no registered model
+    for (const id of [aiRouting.primaryProvider, aiRouting.secondaryProvider]) {
+      if (id && !byProvider.has(id)) byProvider.set(id, { id, models: [], active: 0 });
+    }
+    return Array.from(byProvider.values());
+  }, [safeModels, aiRouting.primaryProvider, aiRouting.secondaryProvider]);
   const safeLedger = mounted ? creditLedger : [];
   const safeTenants = mounted ? tenants : [];
 
@@ -122,10 +133,10 @@ export function AiOperationsView({
                 <div><span className="text-slate-400">Garments</span><p>{model.supportedGarments.join(', ')}</p></div>
               </div>
               <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-100">
-                <Button size="sm" disabled={!canConfigAi} onClick={() => { toggleAiModel(model.id, !model.active); notify('Toggled model active flag.'); }}>
+                <Button size="sm" disabled={!canConfigAi} onClick={async () => { if (await toggleAiModel(model.id, !model.active)) notify('Toggled model active flag.'); }}>
                   {model.active ? 'Deactivate Model' : 'Activate Model'}
                 </Button>
-                <Button size="sm" variant="outline" disabled={!canConfigAi || model.isDefault} onClick={() => { toggleAiModel(model.id, true, true); notify('Set as platform default.'); }}>
+                <Button size="sm" variant="outline" disabled={!canConfigAi || model.isDefault} onClick={async () => { if (await toggleAiModel(model.id, true, true)) notify('Set as platform default.'); }}>
                   {model.isDefault ? 'Default Model' : 'Promote to Default'}
                 </Button>
               </div>
@@ -250,27 +261,28 @@ export function AiOperationsView({
         </div>
 
         {/* Live Backend AI Key & Engine Configuration Component (Existing backend-connected panel) */}
-        {(tab === 'providers' || tab === 'configuration') && (
+        {(tab === 'providers' || tab === 'configuration') && !canConfigAi && (
+          <InlineAlert tone="info">
+            <span>Provider keys and engine settings can only be viewed and changed by roles with the ai:manage permission.</span>
+          </InlineAlert>
+        )}
+        {(tab === 'providers' || tab === 'configuration') && canConfigAi && (
           <SectionPanel title="Live Backend AI Engine Secrets & Connectivity (:4000 -> :8000)" subtitle="Stores masked Gemini, Fal, and Cloudinary keys on the backend and runs live endpoint checks.">
             <AiInfrastructure />
           </SectionPanel>
         )}
 
         {tab === 'ai-overview' && (
-          <SectionPanel title="Configured Inference Providers" subtitle="Real provider key readiness vs active model routing fallback chain">
+          <SectionPanel title="Inference Providers" subtitle="Derived from the model registry. Key status and connectivity are on the Live AI Keys & Providers tab.">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               {safeProviders.map((pr) => (
                 <div key={pr.id} className="p-4 rounded-xl border border-slate-200 space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="font-bold text-slate-900">{pr.name}</p>
-                    <StatusPill status={pr.status} />
+                    <p className="font-bold text-slate-900">{pr.id}</p>
+                    <StatusPill status={pr.active > 0 ? 'ACTIVE' : 'DISABLED'} />
                   </div>
-                  <div className="grid grid-cols-1 min-[360px]:grid-cols-3 gap-2 text-slate-600">
-                    <div>Latency: <strong>{pr.avgLatencyMs}ms</strong></div>
-                    <div>Err Rate: <strong>{pr.errorRatePct}%</strong></div>
-                    <div>Est/Run: <strong>৳{pr.estimatedCostPerRunUsd}</strong></div>
-                  </div>
-                  <p className="text-[11px] text-slate-500 font-mono">Models: {pr.models.join(', ')}</p>
+                  <p className="text-slate-600">{pr.active} of {pr.models.length} registered models active</p>
+                  <p className="text-[11px] text-slate-500 font-mono">Models: {pr.models.join(', ') || '—'}</p>
                 </div>
               ))}
             </div>
@@ -431,12 +443,13 @@ export function AiOperationsView({
               <SectionPanel className="lg:col-span-5" title="Grant / Adjust Tenant AI Credits" subtitle="Creates an immutable ledger record with admin ID & reason.">
                 <form
                   className="space-y-3 text-xs"
-                  onSubmit={(e) => {
+                  onSubmit={async (e) => {
                     e.preventDefault();
                     if (!creditReason.trim()) return;
-                    adjustTenantCredits(creditTenantId, Number(creditDelta) || 0, creditReason.trim(), creditType);
-                    notify(`Recorded ${creditDelta} credit adjustment.`);
-                    setCreditReason('');
+                    if (await adjustTenantCredits(creditTenantId, Number(creditDelta) || 0, creditReason.trim(), creditType)) {
+                      notify(`Recorded ${creditDelta} credit adjustment.`);
+                      setCreditReason('');
+                    }
                   }}
                 >
                   <select
@@ -619,10 +632,9 @@ export function AiOperationsView({
           description={`Updates primary provider to ${routingDraft.primaryProvider}, fallback to ${routingDraft.secondaryProvider}, and timeout to ${routingDraft.timeoutSeconds}s for all virtual try-on requests.`}
           destructive={false}
           confirmLabel="Deploy Routing Policy"
-          onConfirm={() => {
-            updateAiRouting(routingDraft);
+          onConfirm={async () => {
             setConfirmRouting(false);
-            notify('Deployed AI routing policy update.');
+            if (await updateAiRouting(routingDraft)) notify('Deployed AI routing policy update.');
           }}
           onCancel={() => setConfirmRouting(false)}
         />
