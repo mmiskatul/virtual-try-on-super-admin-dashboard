@@ -44,10 +44,9 @@ import {
   DEMO_PLATFORM_SETTINGS,
   DEMO_RECONCILIATIONS,
   DEMO_SECURITY_EVENTS,
-  DEMO_TRANSACTIONS,
 } from '../../data/platformDemoSeed';
 import { DEFAULT_ADMIN_PERMISSIONS } from '../../config/permissions';
-import { mapControlPlaneSnapshot } from '../../lib/controlPlaneMappers';
+import { mapControlPlaneSnapshot, mapRevenueSeries, RevenuePoint } from '../../lib/controlPlaneMappers';
 
 export interface PlatformSliceState {
   _hydrated: boolean;
@@ -72,6 +71,7 @@ export interface PlatformSliceState {
   plans: SubscriptionPlanRecord[];
   subscriptions: TenantSubscriptionRecord[];
   transactions: PaymentTransaction[];
+  revenueSeries: RevenuePoint[];
   invoices: PlatformInvoice[];
   refunds: RefundRequest[];
   reconciliations: ReconciliationItem[];
@@ -131,7 +131,8 @@ const initialState: PlatformSliceState = {
   users: [],
   plans: [],
   subscriptions: [],
-  transactions: DEMO_TRANSACTIONS,
+  transactions: [],
+  revenueSeries: [],
   invoices: [],
   refunds: [],
   reconciliations: DEMO_RECONCILIATIONS,
@@ -209,6 +210,11 @@ export const platformSlice = createSlice({
       state.backendHealth = action.payload.health ?? state.backendHealth;
       state.backendLatencyMs = action.payload.latencyMs ?? state.backendLatencyMs;
       state.lastSyncedAt = new Date().toLocaleTimeString('en-US');
+    },
+    // Real monthly figures from the backend; an empty answer clears the chart.
+    setRevenueSeries: (state, action: PayloadAction<any[]>) => {
+      if (!Array.isArray(action.payload)) return;
+      state.revenueSeries = mapRevenueSeries(action.payload);
     },
     setBackendTelemetry: (state, action: PayloadAction<{ overview: any; aiMetrics: any }>) => {
       state.backendTelemetry = action.payload;

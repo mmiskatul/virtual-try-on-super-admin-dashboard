@@ -18,7 +18,6 @@ import {
   TrendingUp,
   Users,
 } from 'lucide-react';
-import { DEMO_SERIES_REVENUE } from '../../data/platformDemoSeed';
 import { usePlatformStore } from '../../stores/usePlatformStore';
 import { useAdminUiStore } from '../../stores/useAdminUiStore';
 import { useMounted } from '../../hooks/useMounted';
@@ -47,6 +46,7 @@ export function ExecutiveOverviewView() {
   const users = usePlatformStore((s) => s.users);
   const subscriptions = usePlatformStore((s) => s.subscriptions);
   const transactions = usePlatformStore((s) => s.transactions);
+  const revenueSeries = usePlatformStore((s) => s.revenueSeries);
   const tryOnJobs = usePlatformStore((s) => s.tryOnJobs);
   const modProducts = usePlatformStore((s) => s.modProducts);
   const auditEvents = usePlatformStore((s) => s.auditEvents);
@@ -56,7 +56,7 @@ export function ExecutiveOverviewView() {
   const showToast = useAdminUiStore((s) => s.showToast);
   const hideToast = useAdminUiStore((s) => s.hideToast);
 
-  const [chartMetric, setChartMetric] = useState<'revenue' | 'mrr' | 'generations'>('revenue');
+  const [chartMetric, setChartMetric] = useState<'revenue' | 'generations'>('revenue');
 
   const safeTenants = mounted ? tenants : [];
   const safeUsers = mounted ? users : [];
@@ -178,12 +178,11 @@ export function ExecutiveOverviewView() {
           <SectionPanel
             className="lg:col-span-8"
             title="Platform Growth & Revenue Trajectory"
-            subtitle="Toggle between total SaaS + GMV volume, recurring MRR, and virtual try-on compute volume (Demo historical curve)"
+            subtitle="Monthly paid-invoice revenue and virtual try-on generations, taken from the backend (last 6 months)"
             right={
               <div className="flex flex-wrap gap-1.5 text-xs">
                 {[
-                  ['revenue', 'Platform Revenue (৳)'],
-                  ['mrr', 'SaaS MRR (৳)'],
+                  ['revenue', 'Invoiced Revenue (৳)'],
                   ['generations', 'AI Try-Ons'],
                 ].map(([k, lbl]) => (
                   <button
@@ -203,9 +202,9 @@ export function ExecutiveOverviewView() {
             }
           >
             <SvgTrendChart
-              data={DEMO_SERIES_REVENUE}
+              data={mounted ? revenueSeries : []}
               valueKey={chartMetric}
-              prefix={chartMetric === 'generations' ? '' : '$'}
+              prefix={chartMetric === 'generations' ? '' : '৳'}
             />
           </SectionPanel>
 

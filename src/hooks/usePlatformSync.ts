@@ -10,6 +10,7 @@ export function usePlatformSync() {
   const setLiveAuditLogs = usePlatformStore((s) => s.setLiveAuditLogs);
   const setLiveGenerations = usePlatformStore((s) => s.setLiveGenerations);
   const setBackendTelemetry = usePlatformStore((s) => s.setBackendTelemetry);
+  const setRevenueSeries = usePlatformStore((s) => s.setRevenueSeries);
 
   const syncNow = useCallback(async () => {
     const healthCheck = await platformService.checkBackendHealth();
@@ -20,13 +21,14 @@ export function usePlatformSync() {
     }
 
     try {
-      const [overview, tenants, logs, gens, aiMetrics, snapshotRes] = await Promise.allSettled([
+      const [overview, tenants, logs, gens, aiMetrics, snapshotRes, seriesRes] = await Promise.allSettled([
         platformService.getOverview(),
         platformService.getTenants(),
         platformService.getAuditLogs(),
         platformService.getGenerations(undefined, 50),
         platformService.getAiMetrics(),
         platformService.getControlPlaneSnapshot(),
+        platformService.getAnalyticsSeries(6),
       ]);
 
       const anyAuthedOk =
@@ -46,6 +48,9 @@ export function usePlatformSync() {
       if (snapshotRes.status === 'fulfilled' && snapshotRes.value?.data) {
         usePlatformStore.getState().hydrateControlPlaneSnapshot?.(snapshotRes.value.data);
       }
+      if (seriesRes.status === 'fulfilled' && Array.isArray(seriesRes.value?.data?.points)) {
+        setRevenueSeries(seriesRes.value.data.points);
+      }
       setBackendTelemetry({
         overview: overview.status === 'fulfilled' ? overview.value : null,
         aiMetrics: aiMetrics.status === 'fulfilled' ? aiMetrics.value : null,
@@ -63,6 +68,7 @@ export function usePlatformSync() {
     setLiveAuditLogs,
     setLiveGenerations,
     setLiveStatus,
+    setRevenueSeries,
   ]);
 
   useEffect(() => {

@@ -6,6 +6,7 @@ import type {
   DataGovernanceRequest,
   FeatureFlagRecord,
   ModerationProductItem,
+  PaymentTransaction,
   PlatformGlobalSettings,
   PlatformInvoice,
   PlatformUserRecord,
@@ -38,6 +39,7 @@ export interface MappedControlPlane {
   plans?: SubscriptionPlanRecord[];
   subscriptions?: TenantSubscriptionRecord[];
   invoices?: PlatformInvoice[];
+  transactions?: PaymentTransaction[];
   refunds?: RefundRequest[];
   creditLedger?: CreditLedgerEntry[];
   aiModels?: AiModelRecord[];
@@ -179,6 +181,48 @@ export function mapInvoices(rows: Raw[], ctx: ControlPlaneContext): PlatformInvo
     status: pick(i.status, ['PAID', 'OPEN', 'PAST_DUE', 'VOID'] as const, 'OPEN'),
     dueDate: str(i.dueDate),
     issuedAt: str(i.issuedAt),
+  }));
+}
+
+/**
+ * Platform transactions are the subscription invoices the platform has issued. The backend records an invoice as
+ * PAID when a plan is changed, without a payment processor, so the provider is MANUAL. OPEN invoices are pending;
+ * VOID invoices were never a payment and are left out. The backend has no failed-payment records, so none are shown.
+ */
+export function mapTransactionsFromInvoices(invoices: PlatformInvoice[]): PaymentTransaction[] {
+  const out: PaymentTransaction[] = [];
+  for (const inv of invoices) {
+    if (inv.status !== 'PAID' && inv.status !== 'OPEN') continue;
+    out.push({
+      id: inv.id,
+      tenantId: inv.tenantId,
+      tenantName: inv.tenantName,
+      customerOrEntity: inv.tenantName,
+      type: 'SUBSCRIPTION',
+      amount: inv.total,
+      currency: inv.currency,
+      provider: 'MANUAL',
+      providerRef: inv.id,
+      status: inv.status === 'PAID' ? 'SUCCEEDED' : 'PENDING',
+      createdAt: inv.issuedAt,
+    });
+  }
+  return out;
+}
+
+export interface RevenuePoint {
+  month: string;
+  label: string;
+  revenue: number;
+  generations: number;
+}
+
+export function mapRevenueSeries(points: Raw[]): RevenuePoint[] {
+  return points.map((p) => ({
+    month: str(p.month),
+    label: str(p.label),
+    revenue: num(p.revenue),
+    generations: num(p.generations),
   }));
 }
 
@@ -380,7 +424,10 @@ export function mapControlPlaneSnapshot(snap: Raw | null | undefined, ctx: Contr
   if (plans) out.plans = plans;
   if (arr('users')) out.users = mapUsers(arr('users')!);
   if (arr('subscriptions')) out.subscriptions = mapSubscriptions(arr('subscriptions')!, plans || []);
-  if (arr('invoices')) out.invoices = mapInvoices(arr('invoices')!, ctx);
+  if (arr('invoices')) {
+    out.invoices = mapInvoices(arr('invoices')!, ctx);
+    out.transactions = mapTransactionsFromInvoices(out.invoices);
+  }
   if (arr('refunds')) out.refunds = mapRefunds(arr('refunds')!, ctx);
   if (arr('creditLedger')) out.creditLedger = mapCreditLedger(arr('creditLedger')!, ctx);
   if (arr('aiModels')) out.aiModels = mapAiModels(arr('aiModels')!);

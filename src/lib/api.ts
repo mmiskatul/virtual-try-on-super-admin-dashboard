@@ -330,6 +330,13 @@ export const superAdminApi = {
   },
 
   // Phase 5 & 6 Complete Enterprise Control Plane APIs
+  /** Real monthly revenue (paid invoices) and try-on generations, oldest month first. */
+  getAnalyticsSeries: (months = 6) => {
+    return request<{ success: boolean; data: { points: any[] } }>(
+      `${BACKEND_API_URL}/api/v1/admin/analytics/series?months=${months}`
+    );
+  },
+
   getControlPlaneSnapshot: () => {
     return request<{ success: boolean; data: any }>(`${BACKEND_API_URL}/api/v1/admin/control-plane/snapshot`);
   },

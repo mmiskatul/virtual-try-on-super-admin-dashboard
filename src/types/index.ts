@@ -189,7 +189,7 @@ export interface PaymentTransaction {
   type: 'SUBSCRIPTION' | 'CREDIT_PACK' | 'MARKETPLACE_COMMISSION';
   amount: number;
   currency: string;
-  provider: 'STRIPE' | 'SSLCOMMERZ' | 'BKASH';
+  provider: 'STRIPE' | 'SSLCOMMERZ' | 'BKASH' | 'MANUAL';
   providerRef: string;
   status: 'SUCCEEDED' | 'FAILED' | 'PENDING' | 'REFUNDED';
   failureReason?: string;

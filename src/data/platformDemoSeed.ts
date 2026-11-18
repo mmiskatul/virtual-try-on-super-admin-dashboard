@@ -5,20 +5,11 @@ import {
   MarketplaceCollection,
   MarketplaceReportItem,
   ModerationBrandItem,
-  PaymentTransaction,
   PlatformAlert,
   PlatformGlobalSettings,
   ReconciliationItem,
   SecurityEventRecord,
 } from '../types';
-
-export const DEMO_TRANSACTIONS: PaymentTransaction[] = [
-  { id: 'txn_9012', tenantId: 'tenant_vogue', tenantName: 'Vogue Nova', customerOrEntity: 'Marcus Sterling', type: 'SUBSCRIPTION', amount: 299, currency: 'BDT', provider: 'STRIPE', providerRef: 'pi_3Q8xL92a', status: 'SUCCEEDED', createdAt: '2026-11-11 08:12' },
-  { id: 'txn_9011', tenantId: 'tenant_aura', tenantName: 'Aura Atelier', customerOrEntity: 'Elena Rostova', type: 'SUBSCRIPTION', amount: 99, currency: 'BDT', provider: 'SSLCOMMERZ', providerRef: 'SSL-88412A', status: 'SUCCEEDED', createdAt: '2026-11-10 17:45' },
-  { id: 'txn_9010', tenantId: 'tenant_012', tenantName: 'Velvet Thread', customerOrEntity: 'Maya Chen', type: 'SUBSCRIPTION', amount: 99, currency: 'BDT', provider: 'STRIPE', providerRef: 'pi_3Q8vF11c', status: 'FAILED', failureReason: 'insufficient_funds', createdAt: '2026-11-10 14:02' },
-  { id: 'txn_9009', tenantId: 'tenant_003', tenantName: 'Aarong Heritage Studio', customerOrEntity: 'Farhana Rahman', type: 'CREDIT_PACK', amount: 150, currency: 'BDT', provider: 'BKASH', providerRef: 'BK-910283', status: 'SUCCEEDED', createdAt: '2026-11-09 12:30' },
-  { id: 'txn_9008', tenantId: 'tenant_014', tenantName: 'Monsoon Outerwear', customerOrEntity: 'Arjun Mehta', type: 'SUBSCRIPTION', amount: 99, currency: 'BDT', provider: 'STRIPE', providerRef: 'pi_3Q8kQ71b', status: 'REFUNDED', createdAt: '2026-11-08 09:18' },
-];
 
 export const DEMO_RECONCILIATIONS: ReconciliationItem[] = [
   { id: 'rec_101', provider: 'STRIPE', providerEventId: 'evt_3Q8vF11c99', type: 'WEBHOOK_FAILURE', expectedAmount: 99, providerAmount: 0, status: 'OPEN', detectedAt: '2026-11-10 14:04', notes: 'Stripe invoice.payment_failed webhook retry exhausted.' },
@@ -99,13 +90,4 @@ export const DEMO_PLATFORM_SETTINGS: PlatformGlobalSettings = {
     scope: 'ALL_APPS',
   },
 };
-
-export const DEMO_SERIES_REVENUE = [
-  { label: 'Jun', revenue: 41200, mrr: 18400, generations: 42100 },
-  { label: 'Jul', revenue: 48900, mrr: 21200, generations: 51800 },
-  { label: 'Aug', revenue: 56300, mrr: 24900, generations: 64200 },
-  { label: 'Sep', revenue: 69400, mrr: 29100, generations: 78500 },
-  { label: 'Oct', revenue: 81200, mrr: 34600, generations: 94100 },
-  { label: 'Nov', revenue: 94800, mrr: 39400, generations: 112400 },
-];
 

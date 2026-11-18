@@ -34,6 +34,7 @@ import {
 } from '../types';
 import { store } from '../store';
 import { createSliceFacadeHook } from '../store/hooks';
+import type { RevenuePoint } from '../lib/controlPlaneMappers';
 import { selectPlatformState } from '../store/selectors';
 import { platformActions } from '../store/slices/platformSlice';
 
@@ -59,6 +60,7 @@ export interface PlatformStoreState {
   plans: SubscriptionPlanRecord[];
   subscriptions: TenantSubscriptionRecord[];
   transactions: PaymentTransaction[];
+  revenueSeries: RevenuePoint[];
   invoices: PlatformInvoice[];
   refunds: RefundRequest[];
   reconciliations: ReconciliationItem[];
@@ -87,6 +89,7 @@ export interface PlatformStoreState {
 
   setLiveStatus: (live: boolean, health?: any, latencyMs?: number) => void;
   setBackendTelemetry: (telemetry: { overview: any; aiMetrics: any }) => void;
+  setRevenueSeries: (points: any[]) => void;
   mergeLiveTenants: (raw: any[]) => void;
   setLiveAuditLogs: (raw: any[]) => void;
   setLiveGenerations: (raw: any[]) => void;
@@ -166,6 +169,9 @@ const platformBoundActions = {
   },
   setBackendTelemetry: (telemetry: { overview: any; aiMetrics: any }) => {
     store.dispatch(platformActions.setBackendTelemetry(telemetry));
+  },
+  setRevenueSeries: (points: any[]) => {
+    store.dispatch(platformActions.setRevenueSeries(points));
   },
   mergeLiveTenants: (raw: any[]) => {
     store.dispatch(platformActions.mergeLiveTenants(raw));
