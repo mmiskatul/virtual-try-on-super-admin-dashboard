@@ -192,50 +192,104 @@ export async function refreshAdminSessionFromBackend(cookieHeader: string): Prom
   }
 }
 
+type VerifySessionResult = {
+  ok: boolean;
+  user?: { id?: string; role?: string };
+};
+
+/**
+ * The edge middleware re-checks the session with the backend on almost every request (page loads, Next.js link
+ * prefetches, data requests). Without a cache one page view sends dozens of identical calls to the API from
+ * Cloudflare's own servers, which is what trips Cloudflare's rate limiting (error 1015) for every visitor.
+ * So: a successful check is reused for a few seconds, and requests that arrive together share one check.
+ * Failed checks are never cached, so a revoked or expired session is noticed immediately.
+ */
+const SESSION_VERIFY_CACHE_TTL_MS = 10_000;
+const SESSION_VERIFY_CACHE_MAX_ENTRIES = 500;
+const sessionVerifyInFlight = new Map<string, Promise<VerifySessionResult>>();
+const sessionVerifyCache = new Map<string, { result: VerifySessionResult; expiresAt: number }>();
+
 export async function verifyAdminSessionWithBackend(
   cookieHeader: string,
   expectedUserId?: string,
-): Promise<{
-  ok: boolean;
-  user?: { id?: string; role?: string };
-}> {
+): Promise<VerifySessionResult> {
   if (!cookieHeader) {
     return { ok: false };
   }
 
-  try {
-    const res = await fetch(`${getBackendApiBaseUrl()}/api/v1/admin/auth/session`, {
-      method: 'GET',
-      headers: {
-        Cookie: cookieHeader,
-        'X-Auth-Portal': 'admin',
-        'X-Auth-Transport': 'cookie',
-      },
-      cache: 'no-store',
-      signal: AbortSignal.timeout(3000),
-    });
-
-    if (!res.ok) {
-      return { ok: false };
-    }
-
-    const data = await res.json().catch(() => null);
-    if (!data || data.authenticated !== true || !data.user || !isAllowedAdminRole(data.user.role)) {
-      return { ok: false };
-    }
-
-    if (expectedUserId && data.user.id && data.user.id !== expectedUserId) {
-      return { ok: false };
-    }
-
-    return {
-      ok: true,
-      user: {
-        id: typeof data.user.id === 'string' ? data.user.id : undefined,
-        role: data.user.role,
-      },
-    };
-  } catch {
-    return { ok: false };
+  const cacheKey = `${cookieHeader}::${expectedUserId || ''}`;
+  const now = Date.now();
+  const cached = sessionVerifyCache.get(cacheKey);
+  if (cached && cached.expiresAt > now) {
+    return cached.result;
   }
+  if (cached) {
+    sessionVerifyCache.delete(cacheKey);
+  }
+
+  const inFlight = sessionVerifyInFlight.get(cacheKey);
+  if (inFlight) {
+    return inFlight;
+  }
+
+  const promise: Promise<VerifySessionResult> = (async () => {
+    try {
+      const res = await fetch(`${getBackendApiBaseUrl()}/api/v1/admin/auth/session`, {
+        method: 'GET',
+        headers: {
+          Cookie: cookieHeader,
+          'X-Auth-Portal': 'admin',
+          'X-Auth-Transport': 'cookie',
+        },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(3000),
+      });
+
+      if (!res.ok) {
+        return { ok: false };
+      }
+
+      const data = await res.json().catch(() => null);
+      if (!data || data.authenticated !== true || !data.user || !isAllowedAdminRole(data.user.role)) {
+        return { ok: false };
+      }
+
+      if (expectedUserId && data.user.id && data.user.id !== expectedUserId) {
+        return { ok: false };
+      }
+
+      const result: VerifySessionResult = {
+        ok: true,
+        user: {
+          id: typeof data.user.id === 'string' ? data.user.id : undefined,
+          role: data.user.role,
+        },
+      };
+
+      if (sessionVerifyCache.size >= SESSION_VERIFY_CACHE_MAX_ENTRIES) {
+        const pruneNow = Date.now();
+        sessionVerifyCache.forEach((v, k) => {
+          if (v.expiresAt <= pruneNow) sessionVerifyCache.delete(k);
+        });
+        if (sessionVerifyCache.size >= SESSION_VERIFY_CACHE_MAX_ENTRIES) {
+          const firstKey = sessionVerifyCache.keys().next().value;
+          if (firstKey) sessionVerifyCache.delete(firstKey);
+        }
+      }
+
+      sessionVerifyCache.set(cacheKey, {
+        result,
+        expiresAt: Date.now() + SESSION_VERIFY_CACHE_TTL_MS,
+      });
+
+      return result;
+    } catch {
+      return { ok: false };
+    } finally {
+      sessionVerifyInFlight.delete(cacheKey);
+    }
+  })();
+
+  sessionVerifyInFlight.set(cacheKey, promise);
+  return promise;
 }
