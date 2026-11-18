@@ -16,7 +16,7 @@ import {
 import { usePlatformStore } from '../../stores/usePlatformStore';
 import { useAdminUiStore } from '../../stores/useAdminUiStore';
 import { useMounted } from '../../hooks/useMounted';
-import { canAdminPerform } from '../../config/permissions';
+import { usePermissions } from '../../hooks/usePermissions';
 import {
   AdminPageHeader,
   AdminPermissionGate,
@@ -32,17 +32,29 @@ import { Button } from '../../components/ui/button';
 export type MarketplaceCmsTab =
   | 'marketplace-overview'
   | 'products'
-  | 'brands'
-  | 'categories'
-  | 'collections'
   | 'featured'
-  | 'reports'
   | 'cms-dashboard'
   | 'homepage'
   | 'pages'
   | 'banners'
-  | 'media'
   | 'blog';
+
+type CmsType = 'HOMEPAGE_SECTION' | 'STATIC_PAGE' | 'BANNER' | 'BLOG';
+
+const CMS_TYPE_TABS: Array<{ tab: MarketplaceCmsTab; type: CmsType; label: string; href: string }> = [
+  { tab: 'homepage', type: 'HOMEPAGE_SECTION', label: 'Homepage Sections', href: '/admin/cms/homepage' },
+  { tab: 'pages', type: 'STATIC_PAGE', label: 'Static Pages', href: '/admin/cms/pages' },
+  { tab: 'banners', type: 'BANNER', label: 'Banners', href: '/admin/cms/banners' },
+  { tab: 'blog', type: 'BLOG', label: 'Blog & Articles', href: '/admin/cms/blog' },
+];
+
+const CMS_TAB_META: Record<string, { title: string; subtitle?: string; noun: string; placeholder: string; slugPrefix: string }> = {
+  'cms-dashboard': { title: 'All Platform Content', subtitle: 'Every CMS item across all types. Open a type to add new content.', noun: 'content', placeholder: '', slugPrefix: '' },
+  homepage: { title: 'Homepage Sections', noun: 'homepage section', placeholder: 'New homepage section title...', slugPrefix: 'home/' },
+  pages: { title: 'Static Pages', noun: 'page', placeholder: 'New page title (e.g. Terms of Service)...', slugPrefix: '' },
+  banners: { title: 'Banners', noun: 'banner', placeholder: 'New banner headline...', slugPrefix: 'banners/' },
+  blog: { title: 'Blog & Articles', noun: 'article', placeholder: 'New article title...', slugPrefix: 'blog/' },
+};
 
 export function MarketplaceModerationView({
   initialTab = 'marketplace-overview',
@@ -52,39 +64,28 @@ export function MarketplaceModerationView({
   productId?: string;
 }) {
   const mounted = useMounted();
-  const activeRole = usePlatformStore((s) => s.activeRole);
-  const roleOverrides = usePlatformStore((s) => s.roleOverrides);
+  const { can } = usePermissions();
   const modProducts = usePlatformStore((s) => s.modProducts);
-  const modBrands = usePlatformStore((s) => s.modBrands);
-  const categories = usePlatformStore((s) => s.categories);
-  const collections = usePlatformStore((s) => s.collections);
-  const mktReports = usePlatformStore((s) => s.mktReports);
   const cmsPages = usePlatformStore((s) => s.cmsPages);
 
   const moderateProduct = usePlatformStore((s) => s.moderateProduct);
-  const moderateBrand = usePlatformStore((s) => s.moderateBrand);
-  const saveCategory = usePlatformStore((s) => s.saveCategory);
-  const saveCollection = usePlatformStore((s) => s.saveCollection);
-  const resolveMktReport = usePlatformStore((s) => s.resolveMktReport);
   const saveCmsPage = usePlatformStore((s) => s.saveCmsPage);
 
   const showToast = useAdminUiStore((s) => s.showToast);
   const hideToast = useAdminUiStore((s) => s.hideToast);
 
   const [tab, setTab] = useState<MarketplaceCmsTab>(initialTab);
-  const [newCatName, setNewCatName] = useState('');
   const [newCmsTitle, setNewCmsTitle] = useState('');
   const [confirmReject, setConfirmReject] = useState<{ id: string; name: string } | null>(null);
 
-  const canModerate = canAdminPerform(activeRole, 'marketplace', 'approve', roleOverrides);
-  const canEditCms = canAdminPerform(activeRole, 'cms', 'edit', roleOverrides);
+  const canModerate = can('marketplace', 'approve');
+  const canEditCms = can('cms', 'edit');
+  const cmsType = CMS_TYPE_TABS.find((t) => t.tab === tab)?.type;
+  const cmsTabMeta = CMS_TAB_META[tab] || CMS_TAB_META['cms-dashboard'];
 
   const safeProducts = mounted ? modProducts : [];
-  const safeBrands = mounted ? modBrands : [];
-  const safeCats = mounted ? categories : [];
-  const safeCols = mounted ? collections : [];
-  const safeReports = mounted ? mktReports : [];
   const safeCms = mounted ? cmsPages : [];
+  const visibleCms = cmsType ? safeCms.filter((p) => p.type === cmsType) : safeCms;
 
   const notify = (msg: string) => {
     showToast(msg);
@@ -117,13 +118,13 @@ export function MarketplaceModerationView({
                 <div><span className="text-slate-400">Reports</span><p className="font-bold">{prod.reportsCount}</p></div>
               </div>
               <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-100">
-                <Button size="sm" disabled={!canModerate} onClick={() => { moderateProduct(prod.id, 'APPROVED'); notify('Approved for public marketplace.'); }}>
+                <Button size="sm" disabled={!canModerate} onClick={async () => { if (await moderateProduct(prod.id, 'APPROVED')) notify('Approved for public marketplace.'); }}>
                   Approve Listing
                 </Button>
-                <Button size="sm" variant="outline" disabled={!canModerate} onClick={() => { moderateProduct(prod.id, 'CHANGES_REQUESTED'); notify('Requested listing updates from brand.'); }}>
+                <Button size="sm" variant="outline" disabled={!canModerate} onClick={async () => { if (await moderateProduct(prod.id, 'CHANGES_REQUESTED')) notify('Requested listing updates from brand.'); }}>
                   Request Changes
                 </Button>
-                <Button size="sm" variant="destructive" disabled={!canModerate} onClick={() => { moderateProduct(prod.id, 'REJECTED'); notify('Rejected from public marketplace.'); }}>
+                <Button size="sm" variant="destructive" disabled={!canModerate} onClick={async () => { if (await moderateProduct(prod.id, 'REJECTED')) notify('Rejected from public marketplace.'); }}>
                   Reject & Unpublish
                 </Button>
               </div>
@@ -134,15 +135,15 @@ export function MarketplaceModerationView({
     );
   }
 
-  const isCmsView = ['cms-dashboard', 'homepage', 'pages', 'banners', 'media', 'blog'].includes(tab);
+  const isCmsView = ['cms-dashboard', 'homepage', 'pages', 'banners', 'blog'].includes(tab);
 
   return (
     <AdminPermissionGate module={isCmsView ? 'cms' : 'marketplace'} action="view">
       <div className="space-y-6">
         <AdminPageHeader
           eyebrow={isCmsView ? 'Platform Content & Homepage CMS' : 'Global Marketplace Governance'}
-          title={isCmsView ? 'Platform CMS, Homepage & Media Library' : 'Marketplace Moderation, Categories & Collections'}
-          subtitle="Approve published brand listings, manage global taxonomies, enforce sponsored labeling, and build global marketplace homepage blocks."
+          title={isCmsView ? 'Platform CMS & Homepage Content' : 'Marketplace Moderation'}
+          subtitle="Approve, flag or reject published brand listings, feature products, and manage platform homepage content."
         />
 
         <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:flex-wrap">
@@ -152,17 +153,12 @@ export function MarketplaceModerationView({
                 ['homepage', 'Homepage Builder', '/admin/cms/homepage'],
                 ['pages', 'Static Pages', '/admin/cms/pages'],
                 ['banners', 'Banners', '/admin/cms/banners'],
-                ['media', 'Media Library', '/admin/cms/media'],
                 ['blog', 'Blog & Articles', '/admin/cms/blog'],
               ]
             : [
                 ['marketplace-overview', 'Overview', '/admin/marketplace'],
                 ['products', 'Product Moderation', '/admin/marketplace/products'],
-                ['brands', 'Brand Moderation', '/admin/marketplace/brands'],
-                ['categories', 'Categories', '/admin/marketplace/categories'],
-                ['collections', 'Collections', '/admin/marketplace/collections'],
                 ['featured', 'Featured Placements', '/admin/marketplace/featured'],
-                ['reports', 'Abuse Reports', '/admin/marketplace/reports'],
               ]
           ).map(([id, lbl, href]) => (
             <Link
@@ -183,8 +179,8 @@ export function MarketplaceModerationView({
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <MetricCard label="Public Approved Listings" value={safeProducts.filter((p) => p.visibility === 'PUBLIC').length} icon={<Globe className="w-4 h-4 text-emerald-600" />} />
           <MetricCard label="Pending Moderation" value={safeProducts.filter((p) => p.moderationStatus === 'PENDING_REVIEW').length} icon={<ShieldCheck className="w-4 h-4 text-amber-600" />} />
-          <MetricCard label="Open Abuse Reports" value={safeReports.filter((r) => r.status !== 'RESOLVED').length} icon={<Flag className="w-4 h-4 text-rose-600" />} />
-          <MetricCard label="Global Categories" value={safeCats.length} icon={<Layers className="w-4 h-4" />} />
+          <MetricCard label="Featured Listings" value={safeProducts.filter((p) => p.featured).length} icon={<Sparkles className="w-4 h-4 text-amber-600" />} />
+          <MetricCard label="Flagged / Rejected" value={safeProducts.filter((p) => ['CHANGES_REQUESTED', 'REJECTED', 'UNPUBLISHED'].includes(p.moderationStatus)).length} icon={<Flag className="w-4 h-4 text-rose-600" />} />
         </div>
 
         {(tab === 'marketplace-overview' || tab === 'products' || tab === 'featured') && (
@@ -215,7 +211,7 @@ export function MarketplaceModerationView({
                         variant="outline"
                         size="sm"
                         disabled={!canModerate}
-                        onClick={() => { moderateProduct(p.id, 'APPROVED', true); notify(`Approved & featured ${p.productName}.`); }}
+                        onClick={async () => { if (await moderateProduct(p.id, 'APPROVED', true)) notify(`Approved & featured ${p.productName}.`); }}
                         className="flex-1 h-8 text-[11px]"
                       >
                         Approve
@@ -270,7 +266,7 @@ export function MarketplaceModerationView({
                               variant="outline"
                               size="sm"
                               disabled={!canModerate}
-                              onClick={() => { moderateProduct(p.id, 'APPROVED', true); notify(`Approved & featured ${p.productName}.`); }}
+                              onClick={async () => { if (await moderateProduct(p.id, 'APPROVED', true)) notify(`Approved & featured ${p.productName}.`); }}
                               className="h-7 px-2 text-[11px]"
                             >
                               Approve
@@ -294,146 +290,52 @@ export function MarketplaceModerationView({
           </SectionPanel>
         )}
 
-        {tab === 'brands' && (
-          <SectionPanel title="Brand Verification & Marketplace Standing">
-            <div className="space-y-2 text-xs">
-              {safeBrands.map((b) => (
-                <div key={b.id} className="p-3 sm:p-3.5 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-bold text-slate-900">{b.brandName}</p>
-                    <p className="text-slate-500 break-words">{b.reviewerNote} • Reports: {b.reportsCount}</p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 shrink-0">
-                    <StatusPill status={b.verificationStatus} />
-                    <StatusPill status={b.marketplaceStatus} />
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={!canModerate}
-                      onClick={() => {
-                        moderateBrand(b.id, {
-                          verificationStatus: 'VERIFIED',
-                          marketplaceStatus: b.marketplaceStatus === 'ALLOWED' ? 'RESTRICTED' : 'ALLOWED',
-                        });
-                        notify(`Updated moderation standing for ${b.brandName}.`);
-                      }}
-                    >
-                      Toggle Restriction
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </SectionPanel>
-        )}
-
-        {tab === 'categories' && (
-          <SectionPanel title="Global Marketplace Categories">
-            <form
-              className="flex flex-col sm:flex-row gap-2 pb-3"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!newCatName.trim()) return;
-                saveCategory({
-                  id: `cat_${Date.now()}`,
-                  name: newCatName.trim(),
-                  slug: newCatName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-                  order: safeCats.length + 1,
-                  active: true,
-                  productCount: 0,
-                  seoTitle: `${newCatName.trim()} | Marketplace`,
-                });
-                setNewCatName('');
-                notify('Added marketplace category.');
-              }}
-            >
-              <input value={newCatName} onChange={(e) => setNewCatName(e.target.value)} placeholder="New global category (e.g. Footwear)" className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs" />
-              <Button type="submit" size="sm" disabled={!canModerate} className="gap-1"><Plus className="w-3.5 h-3.5" /> Add Category</Button>
-            </form>
-            <div className="space-y-2 text-xs">
-              {safeCats.map((c) => (
-                <div key={c.id} className="p-3 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="font-bold text-slate-900">{c.order}. {c.name}</p>
-                    <p className="text-slate-500">/{c.slug} • {c.productCount} products • SEO: {c.seoTitle}</p>
-                  </div>
-                  <StatusPill status={c.active ? 'ACTIVE' : 'DISABLED'} />
-                </div>
-              ))}
-            </div>
-          </SectionPanel>
-        )}
-
-        {tab === 'collections' && (
-          <SectionPanel title="Platform Curated & Sponsored Collections">
-            <div className="space-y-2 text-xs">
-              {safeCols.map((col) => (
-                <div key={col.id} className="p-3.5 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="font-bold text-slate-900">{col.title} {col.sponsored && '(SPONSORED)'}</p>
-                    <p className="text-slate-500">{col.description} • {col.itemCount} items</p>
-                  </div>
-                  <StatusPill status={col.active ? 'ACTIVE' : 'DISABLED'} />
-                </div>
-              ))}
-            </div>
-          </SectionPanel>
-        )}
-
-        {tab === 'reports' && (
-          <SectionPanel title="Policy, Copyright & Quality Reports">
-            <div className="space-y-2 text-xs">
-              {safeReports.map((r) => (
-                <div key={r.id} className="p-3.5 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="font-bold text-slate-900">{r.targetName} — {r.reason}</p>
-                    <p className="text-slate-500">Reporter: {r.reporter} • {r.createdAt}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <StatusPill status={r.status} />
-                    {r.status !== 'RESOLVED' && (
-                      <Button size="sm" variant="outline" disabled={!canModerate} onClick={() => { resolveMktReport(r.id, 'RESOLVED'); notify(`Resolved report ${r.id}.`); }}>
-                        Resolve Report
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </SectionPanel>
-        )}
-
         {isCmsView && (
-          <SectionPanel title="Platform CMS Sections, Pages & Editorial Assets" subtitle="Tenant-private product photos and customer try-on photos are strictly excluded from platform media libraries.">
-            {tab === 'media' && (
-              <InlineAlert tone="info">
-                <span>Platform public media bucket displays curated global campaign assets only — zero private merchant/customer photos are indexed here.</span>
-              </InlineAlert>
+          <SectionPanel title={cmsTabMeta.title} subtitle={cmsTabMeta.subtitle}>
+            {tab === 'cms-dashboard' && (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pb-3 text-xs">
+                {CMS_TYPE_TABS.map((t) => (
+                  <Link key={t.tab} href={t.href} onClick={() => setTab(t.tab)} className="p-3 rounded-lg border border-slate-200 hover:bg-slate-50">
+                    <p className="text-slate-500">{t.label}</p>
+                    <p className="text-xl font-bold text-slate-900">{safeCms.filter((p) => p.type === t.type).length}</p>
+                  </Link>
+                ))}
+              </div>
             )}
-            <form
-              className="flex flex-col sm:flex-row gap-2 pb-2"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!newCmsTitle.trim()) return;
-                saveCmsPage({
-                  id: `cms_${Date.now()}`,
-                  title: newCmsTitle.trim(),
-                  slug: `/${newCmsTitle.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
-                  type: tab === 'blog' ? 'BLOG' : tab === 'banners' ? 'BANNER' : tab === 'homepage' ? 'HOMEPAGE_SECTION' : 'STATIC_PAGE',
-                  status: 'PUBLISHED',
-                  order: safeCms.length + 1,
-                  summary: 'Published platform CMS block.',
-                  updatedAt: new Date().toISOString().slice(0, 10),
-                });
-                setNewCmsTitle('');
-                notify('Saved platform CMS block.');
-              }}
-            >
-              <input value={newCmsTitle} onChange={(e) => setNewCmsTitle(e.target.value)} placeholder="Add homepage section, banner, page, or article title..." className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs" />
-              <Button type="submit" size="sm" disabled={!canEditCms}>Publish Block</Button>
-            </form>
+            {cmsType && (
+              <form
+                className="flex flex-col sm:flex-row gap-2 pb-2"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!newCmsTitle.trim()) return;
+                  const slugBase = newCmsTitle.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                  // The backend keys content by slug, so keep slugs unique per type.
+                  const slug = `/${cmsTabMeta.slugPrefix}${slugBase}`;
+                  const saved = await saveCmsPage({
+                    id: `cms_${Date.now()}`,
+                    title: newCmsTitle.trim(),
+                    slug,
+                    type: cmsType,
+                    status: 'PUBLISHED',
+                    order: visibleCms.length + 1,
+                    summary: 'Published platform CMS block.',
+                    updatedAt: new Date().toISOString().slice(0, 10),
+                  });
+                  if (saved) {
+                    setNewCmsTitle('');
+                    notify(`Saved ${cmsTabMeta.noun}.`);
+                  }
+                }}
+              >
+                <input value={newCmsTitle} onChange={(e) => setNewCmsTitle(e.target.value)} placeholder={cmsTabMeta.placeholder} className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs" />
+                <Button type="submit" size="sm" disabled={!canEditCms || !newCmsTitle.trim()}>Publish</Button>
+              </form>
+            )}
             <div className="space-y-2 text-xs">
-              {safeCms.map((p) => (
+              {visibleCms.length === 0 && (
+                <p className="p-3 rounded-lg bg-slate-50 text-slate-500">No {cmsType ? `${cmsTabMeta.noun}s` : 'content'} yet.</p>
+              )}
+              {visibleCms.map((p) => (
                 <div key={p.id} className="p-3 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="font-bold text-slate-900">{p.title}</p>
@@ -452,12 +354,12 @@ export function MarketplaceModerationView({
           description="Removes public marketplace visibility while leaving the brand's internal catalog intact."
           requireReason
           confirmLabel="Unpublish Listing"
-          onConfirm={() => {
-            if (confirmReject) {
-              moderateProduct(confirmReject.id, 'UNPUBLISHED');
-              notify(`Unpublished ${confirmReject.name}.`);
-            }
+          onConfirm={async () => {
+            const target = confirmReject;
             setConfirmReject(null);
+            if (target && (await moderateProduct(target.id, 'UNPUBLISHED'))) {
+              notify(`Unpublished ${target.name}.`);
+            }
           }}
           onCancel={() => setConfirmReject(null)}
         />
