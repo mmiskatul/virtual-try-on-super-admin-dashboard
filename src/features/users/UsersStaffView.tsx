@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   KeyRound,
@@ -14,13 +14,9 @@ import {
 import { usePlatformStore } from '../../stores/usePlatformStore';
 import { useAdminUiStore } from '../../stores/useAdminUiStore';
 import { useMounted } from '../../hooks/useMounted';
-import {
-  ALL_PLATFORM_ACTIONS,
-  ALL_PLATFORM_MODULES,
-  canAdminPerform,
-  DEFAULT_ADMIN_PERMISSIONS,
-  ROLE_METADATA,
-} from '../../config/permissions';
+import { ApiError, superAdminApi, type RbacCatalog } from '../../lib/api';
+import { hasBackendPermission } from '../../config/permissions';
+import { usePermissions } from '../../hooks/usePermissions';
 import {
   AdminPageHeader,
   AdminPermissionGate,
@@ -48,14 +44,10 @@ export function UsersStaffView({
   userId?: string;
 }) {
   const mounted = useMounted();
-  const activeRole = usePlatformStore((s) => s.activeRole);
-  const roleOverrides = usePlatformStore((s) => s.roleOverrides);
-  const customRoles = usePlatformStore((s) => s.customRoles);
+  const { can, rbac } = usePermissions();
   const users = usePlatformStore((s) => s.users);
   const updateUserStatus = usePlatformStore((s) => s.updateUserStatus);
   const revokeUserSessions = usePlatformStore((s) => s.revokeUserSessions);
-  const toggleRolePermission = usePlatformStore((s) => s.toggleRolePermission);
-  const createCustomRole = usePlatformStore((s) => s.createCustomRole);
   const recordAudit = usePlatformStore((s) => s.recordAudit);
 
   const showToast = useAdminUiStore((s) => s.showToast);
@@ -64,21 +56,53 @@ export function UsersStaffView({
   const [tab, setTab] = useState<UsersStaffTab>(initialTab);
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState('ALL');
-  const [selectedMatrixRole, setSelectedMatrixRole] = useState('OPERATIONS_MANAGER');
-  const [customRoleName, setCustomRoleName] = useState('');
-  const [customRoleSummary, setCustomRoleSummary] = useState('');
+  const [selectedMatrixRole, setSelectedMatrixRole] = useState('');
+  const [catalog, setCatalog] = useState<RbacCatalog | null>(null);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [catalogLoading, setCatalogLoading] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<{
     title: string;
     desc: string;
     onRun: () => void;
   } | null>(null);
 
-  const canManageUsers = canAdminPerform(activeRole, 'users', 'manage_users', roleOverrides);
+  const canManageUsers = can('users', 'suspend');
   const safeUsers = mounted ? users : [];
-  const allRolesMap = {
-    ...ROLE_METADATA,
-    ...Object.fromEntries(customRoles.map((r) => [r.id, r])),
-  };
+  const isRoleTab = tab === 'staff-roles' || tab === 'roles' || tab === 'permissions';
+
+  // Roles and permissions come from the backend; they are not editable in the dashboard.
+  useEffect(() => {
+    if (!isRoleTab || catalog || catalogLoading || catalogError) return;
+    setCatalogLoading(true);
+    superAdminApi
+      .getRbacRoles()
+      .then((res) => {
+        setCatalog(res.data);
+        setSelectedMatrixRole((cur) => cur || rbac.role || res.data.roles.find((r) => r.scope === 'PLATFORM')?.code || '');
+      })
+      .catch((err) => {
+        setCatalogError(
+          err instanceof ApiError && err.status === 403
+            ? 'Your role cannot view the role catalog. It needs the staff:manage permission.'
+            : err instanceof Error
+              ? err.message
+              : 'Could not load roles from the backend.'
+        );
+      })
+      .finally(() => setCatalogLoading(false));
+  }, [isRoleTab, catalog, catalogLoading, catalogError, rbac.role]);
+
+  const platformRoles = useMemo(() => (catalog?.roles || []).filter((r) => r.scope === 'PLATFORM'), [catalog]);
+  const platformPermissions = useMemo(
+    () => (catalog?.permissions || []).filter((p) => p.module !== '*' && !p.module.startsWith('brand:')),
+    [catalog]
+  );
+  const permissionsByModule = useMemo(() => {
+    const grouped = new Map<string, typeof platformPermissions>();
+    for (const p of platformPermissions) grouped.set(p.module, [...(grouped.get(p.module) || []), p]);
+    return Array.from(grouped.entries());
+  }, [platformPermissions]);
+  const matrixRole = platformRoles.find((r) => r.code === selectedMatrixRole) || platformRoles[0];
 
   const notify = (msg: string) => {
     showToast(msg);
@@ -117,10 +141,9 @@ export function UsersStaffView({
                   size="sm"
                   variant={user.status === 'ACTIVE' ? 'destructive' : 'default'}
                   disabled={!canManageUsers}
-                  onClick={() => {
+                  onClick={async () => {
                     const next = user.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
-                    updateUserStatus(user.id, next);
-                    notify(`User ${user.email} marked ${next}.`);
+                    if (await updateUserStatus(user.id, next)) notify(`User ${user.email} marked ${next}.`);
                   }}
                 >
                   {user.status === 'ACTIVE' ? 'Suspend User' : 'Reactivate User'}
@@ -275,10 +298,9 @@ export function UsersStaffView({
                           setConfirmTarget({
                             title: `${u.status === 'ACTIVE' ? 'Suspend' : 'Activate'} ${u.email}?`,
                             desc: 'Updates user access state across JWT authentication boundaries.',
-                            onRun: () => {
-                              updateUserStatus(u.id, u.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE');
+                            onRun: async () => {
                               setConfirmTarget(null);
-                              notify(`Updated ${u.email}.`);
+                              if (await updateUserStatus(u.id, u.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE')) notify(`Updated ${u.email}.`);
                             },
                           })
                         }
@@ -338,10 +360,9 @@ export function UsersStaffView({
                               setConfirmTarget({
                                 title: `${u.status === 'ACTIVE' ? 'Suspend' : 'Activate'} ${u.email}?`,
                                 desc: 'Updates user access state across JWT authentication boundaries.',
-                                onRun: () => {
-                                  updateUserStatus(u.id, u.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE');
+                                onRun: async () => {
                                   setConfirmTarget(null);
-                                  notify(`Updated ${u.email}.`);
+                                  if (await updateUserStatus(u.id, u.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE')) notify(`Updated ${u.email}.`);
                                 },
                               })
                             }
@@ -359,160 +380,91 @@ export function UsersStaffView({
           </SectionPanel>
         )}
 
-        {(tab === 'staff-roles' || tab === 'roles' || tab === 'permissions') && (
+        {isRoleTab && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <SectionPanel className="lg:col-span-7" title="Built-in & Custom Platform Roles" subtitle="Privileged roles enforce mandatory MFA verification.">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  {Object.entries(allRolesMap).map(([key, meta]) => (
-                    <div key={key} className="p-3 rounded-lg border border-slate-200 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <p className="font-bold text-slate-900">{meta.label}</p>
-                        {meta.mfaRequired && <StatusPill status="VERIFIED" />}
-                      </div>
-                      <p className="text-slate-500">{meta.summary}</p>
-                    </div>
-                  ))}
-                </div>
-              </SectionPanel>
+            <p className="text-xs text-slate-600 flex items-start gap-1.5 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <Lock className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+              Roles and permissions are defined in the backend and enforced on every request. This page shows what the
+              backend enforces; it cannot be edited here.
+            </p>
 
-              <SectionPanel className="lg:col-span-5" title="Define Custom Platform Role">
-                <form
-                  className="space-y-3 text-xs"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (!customRoleName.trim()) return;
-                    const id = customRoleName.trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_');
-                    createCustomRole({
-                      id,
-                      label: customRoleName.trim(),
-                      summary: customRoleSummary.trim() || 'Custom delegated platform role.',
-                      mfaRequired: true,
-                    });
-                    setSelectedMatrixRole(id);
-                    setCustomRoleName('');
-                    setCustomRoleSummary('');
-                    notify(`Created custom role ${id}. Configure module checkboxes below.`);
-                  }}
-                >
-                  <input
-                    required
-                    value={customRoleName}
-                    onChange={(e) => setCustomRoleName(e.target.value)}
-                    placeholder="Role Title (e.g. Regional Compliance Lead)"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2"
-                  />
-                  <input
-                    value={customRoleSummary}
-                    onChange={(e) => setCustomRoleSummary(e.target.value)}
-                    placeholder="Operational scope summary..."
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2"
-                  />
-                  <Button type="submit" disabled={!canManageUsers} size="sm" className="w-full gap-1.5">
-                    <Plus className="w-3.5 h-3.5" /> Add Custom Role
-                  </Button>
-                </form>
-              </SectionPanel>
-            </div>
+            {catalogLoading && <p className="text-xs text-slate-500">Loading roles from the backend...</p>}
+            {catalogError && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">{catalogError}</div>
+            )}
 
-            <SectionPanel
-              title="19-Module x 11-Action RBAC Matrix"
-              subtitle="Use the top-bar Role Tester dropdown to verify permission enforcement across navigation and guarded actions."
-              right={
-                <select
-                  value={selectedMatrixRole}
-                  onChange={(e) => setSelectedMatrixRole(e.target.value)}
-                  className="w-full sm:w-auto rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold bg-white"
-                >
-                  {Object.entries(allRolesMap).map(([k, v]) => (
-                    <option key={k} value={k}>
-                      Editing: {v.label}
-                    </option>
-                  ))}
-                </select>
-              }
-            >
-              {selectedMatrixRole === 'SUPER_ADMIN' && (
-                <p className="text-xs text-slate-600 flex items-center gap-1.5 pb-2">
-                  <Lock className="w-3.5 h-3.5 shrink-0" /> Root Super Admin permissions are locked to prevent accidental lockout.
-                </p>
-              )}
-              <div className="sm:hidden space-y-2.5 text-xs">
-                {ALL_PLATFORM_MODULES.map((mod) => {
-                  const effective =
-                    roleOverrides[selectedMatrixRole]?.[mod] ||
-                    DEFAULT_ADMIN_PERMISSIONS[selectedMatrixRole]?.[mod] ||
-                    [];
-                  return (
-                    <div key={mod} className="rounded-lg border border-slate-200 bg-white p-3 space-y-2">
-                      <p className="font-bold uppercase text-[11px] text-slate-800">{mod}</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {ALL_PLATFORM_ACTIONS.map((act) => {
-                          const checked =
-                            selectedMatrixRole === 'SUPER_ADMIN' || effective.includes(act);
-                          const disabled = !canManageUsers || selectedMatrixRole === 'SUPER_ADMIN';
-                          return (
-                            <button
-                              key={act}
-                              type="button"
-                              disabled={disabled}
-                              onClick={() => toggleRolePermission(selectedMatrixRole, mod, act)}
-                              className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase border transition-colors ${
-                                checked
-                                  ? 'bg-indigo-600 text-white border-indigo-600'
-                                  : 'bg-slate-50 text-slate-500 border-slate-200'
-                              } ${disabled ? 'opacity-70 cursor-not-allowed' : ''}`}
-                            >
-                              {act.replace('_', ' ')}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="hidden sm:block overflow-x-auto">
-                <table className="w-full text-left text-[11px]">
-                  <thead>
-                    <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase">
-                      <th className="py-2 pr-3">Module</th>
-                      {ALL_PLATFORM_ACTIONS.map((a) => (
-                        <th key={a} className="py-2 px-1.5 text-center">{a.replace('_', ' ')}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {ALL_PLATFORM_MODULES.map((mod) => {
-                      const effective =
-                        roleOverrides[selectedMatrixRole]?.[mod] ||
-                        DEFAULT_ADMIN_PERMISSIONS[selectedMatrixRole]?.[mod] ||
-                        [];
+            {catalog && (
+              <>
+                <SectionPanel title="Platform Roles" subtitle="Roles marked MFA require multi-factor sign-in.">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    {platformRoles.map((r) => {
+                      const staffCount = safeUsers.filter((u) => u.roleLabel === r.code).length;
                       return (
-                        <tr key={mod}>
-                          <td className="py-2 pr-3 font-bold uppercase text-slate-800">{mod}</td>
-                          {ALL_PLATFORM_ACTIONS.map((act) => {
-                            const checked =
-                              selectedMatrixRole === 'SUPER_ADMIN' || effective.includes(act);
-                            return (
-                              <td key={act} className="py-2 px-1.5 text-center">
-                                <input
-                                  type="checkbox"
-                                  checked={checked}
-                                  disabled={!canManageUsers || selectedMatrixRole === 'SUPER_ADMIN'}
-                                  onChange={() => toggleRolePermission(selectedMatrixRole, mod, act)}
-                                  className="rounded border-slate-300 text-indigo-600"
-                                />
-                              </td>
-                            );
-                          })}
-                        </tr>
+                        <div key={r.code} className="p-3 rounded-lg border border-slate-200 space-y-1.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-bold text-slate-900">{r.name}</p>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {r.code === rbac.role && <StatusPill status="ACTIVE" />}
+                              {r.mfaRequired && <StatusPill status="VERIFIED" />}
+                            </div>
+                          </div>
+                          <p className="text-slate-500">{r.description}</p>
+                          <p className="text-[11px] text-slate-400">
+                            <code>{r.code}</code> • {r.permissions.includes('*:*') ? 'All permissions' : `${r.permissions.length} permissions`} • {staffCount} {staffCount === 1 ? 'user' : 'users'}
+                          </p>
+                        </div>
                       );
                     })}
-                  </tbody>
-                </table>
-              </div>
-            </SectionPanel>
+                  </div>
+                </SectionPanel>
+
+                <SectionPanel
+                  title="Permission Matrix"
+                  subtitle="What each platform role is allowed to do."
+                  right={
+                    <select
+                      value={matrixRole?.code || ''}
+                      onChange={(e) => setSelectedMatrixRole(e.target.value)}
+                      className="w-full sm:w-auto rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold bg-white"
+                    >
+                      {platformRoles.map((r) => (
+                        <option key={r.code} value={r.code}>
+                          {r.name}
+                        </option>
+                      ))}
+                    </select>
+                  }
+                >
+                  {matrixRole && (
+                    <div className="space-y-3 text-xs">
+                      {permissionsByModule.map(([mod, perms]) => (
+                        <div key={mod} className="rounded-lg border border-slate-200 p-3 space-y-2">
+                          <p className="font-bold uppercase text-[11px] text-slate-800">{mod}</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                            {perms.map((p) => {
+                              const allowed = hasBackendPermission(matrixRole.permissions, `${p.module}:${p.action}`);
+                              return (
+                                <div
+                                  key={p.action}
+                                  className={`flex items-start gap-2 rounded-md px-2 py-1.5 ${
+                                    allowed ? 'bg-emerald-50 text-emerald-900' : 'bg-slate-50 text-slate-400'
+                                  }`}
+                                >
+                                  <span className="font-bold w-3 shrink-0">{allowed ? '\u2713' : '\u2013'}</span>
+                                  <span>
+                                    <code className="font-semibold">{p.action}</code> — {p.description}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </SectionPanel>
+              </>
+            )}
           </div>
         )}
 
