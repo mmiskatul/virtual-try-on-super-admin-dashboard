@@ -1,5 +1,6 @@
 import { TenantGovernanceView } from '@/features/tenants/TenantGovernanceView';
 
-export default function Page({ params }: { params: { id: string } }) {
-  return <TenantGovernanceView mode="detail" tenantId={decodeURIComponent(params.id)} detailTab="usage" />;
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <TenantGovernanceView mode="detail" tenantId={decodeURIComponent(id)} detailTab="usage" />;
 }

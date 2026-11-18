@@ -1,5 +1,6 @@
 import { SupportCommsGrowthView } from '@/features/operations/SupportCommsGrowthView';
 
-export default function Page({ params }: { params: { id: string } }) {
-  return <SupportCommsGrowthView ticketId={decodeURIComponent(params.id)} />;
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <SupportCommsGrowthView ticketId={decodeURIComponent(id)} />;
 }

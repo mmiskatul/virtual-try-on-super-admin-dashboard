@@ -33,7 +33,7 @@ export async function getVerifiedAdminSession(): Promise<VerifiedAdminSession | 
     return null;
   }
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const accessToken = cookieStore.get(ADMIN_ACCESS_COOKIE)?.value;
   const refreshToken = cookieStore.get(ADMIN_REFRESH_COOKIE)?.value;
   const sessionCookie = cookieStore.get(ADMIN_SESSION_COOKIE)?.value;

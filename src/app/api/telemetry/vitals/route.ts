@@ -12,7 +12,6 @@ import {
   isValidAdminRefreshCookie,
 } from '@/lib/portal-auth';
 
-export const runtime = 'edge';
 
 /**
  * Real User Monitoring (RUM) Telemetry Ingestion Endpoint: Super Admin

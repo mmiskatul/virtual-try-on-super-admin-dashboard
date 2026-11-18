@@ -9,7 +9,6 @@ const nextConfig = {
   distDir: process.env.NEXT_DIST_DIR || '.next',
   experimental: {
     taint: true,
-    instrumentationHook: true,
   },
   // Old URLs for pages that duplicated another page; keep bookmarks working.
   async redirects() {
