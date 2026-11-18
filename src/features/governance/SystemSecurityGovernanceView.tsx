@@ -22,7 +22,7 @@ import { usePlatformStore } from '../../stores/usePlatformStore';
 import { useAdminUiStore } from '../../stores/useAdminUiStore';
 import { useMounted } from '../../hooks/useMounted';
 import { usePlatformSync } from '../../hooks/usePlatformSync';
-import { canAdminPerform } from '../../config/permissions';
+import { usePermissions } from '../../hooks/usePermissions';
 import {
   AdminPageHeader,
   AdminPermissionGate,
@@ -36,29 +36,15 @@ import { Button } from '../../components/ui/button';
 
 export type GovernanceAreaTab =
   | 'health'
-  | 'logs'
-  | 'backups'
   | 'security-overview'
-  | 'events'
-  | 'sessions'
   | 'audit'
-  | 'policies'
   | 'governance-overview'
   | 'requests'
-  | 'retention'
-  | 'exports'
   | 'integrations-overview'
-  | 'int-payments'
-  | 'int-ai'
   | 'int-email'
-  | 'int-storage'
   | 'webhooks'
   | 'features'
-  | 'configuration'
-  | 'cfg-general'
-  | 'cfg-marketplace'
-  | 'cfg-ai'
-  | 'cfg-uploads';
+  | 'configuration';
 
 export function SystemSecurityGovernanceView({
   initialTab = 'health',
@@ -70,23 +56,18 @@ export function SystemSecurityGovernanceView({
   const isLiveBackend = usePlatformStore((s) => s.isLiveBackend);
   const backendHealth = usePlatformStore((s) => s.backendHealth);
   const backendLatencyMs = usePlatformStore((s) => s.backendLatencyMs);
-  const activeRole = usePlatformStore((s) => s.activeRole);
-  const roleOverrides = usePlatformStore((s) => s.roleOverrides);
+  const { can } = usePermissions();
 
-  const securityEvents = usePlatformStore((s) => s.securityEvents);
   const auditEvents = usePlatformStore((s) => s.auditEvents);
   const dataRequests = usePlatformStore((s) => s.dataRequests);
   const featureFlags = usePlatformStore((s) => s.featureFlags);
   const webhooks = usePlatformStore((s) => s.webhooks);
   const settings = usePlatformStore((s) => s.settings);
 
-  const updateSecurityEvent = usePlatformStore((s) => s.updateSecurityEvent);
   const updateDataRequest = usePlatformStore((s) => s.updateDataRequest);
   const toggleFeatureFlag = usePlatformStore((s) => s.toggleFeatureFlag);
   const addWebhook = usePlatformStore((s) => s.addWebhook);
-  const retryWebhook = usePlatformStore((s) => s.retryWebhook);
   const updateSettings = usePlatformStore((s) => s.updateSettings);
-  const recordAudit = usePlatformStore((s) => s.recordAudit);
 
   const showToast = useAdminUiStore((s) => s.showToast);
   const hideToast = useAdminUiStore((s) => s.hideToast);
@@ -100,8 +81,8 @@ export function SystemSecurityGovernanceView({
     onRun: (reason: string) => void;
   } | null>(null);
 
-  const canConfig = canAdminPerform(activeRole, 'configuration', 'configure', roleOverrides);
-  const safeSecurity = mounted ? securityEvents : [];
+  const canConfig = can('configuration', 'configure');
+  const canInfra = can('system', 'configure');
   const safeAudit = mounted ? auditEvents : [];
   const safeGov = mounted ? dataRequests : [];
   const safeFlags = mounted ? featureFlags : [];
@@ -112,13 +93,13 @@ export function SystemSecurityGovernanceView({
     setTimeout(hideToast, 3000);
   };
 
-  const gateModule = tab.startsWith('security') || ['events', 'sessions', 'audit', 'policies'].includes(tab)
+  const gateModule = tab.startsWith('security') || tab === 'audit'
     ? 'security'
-    : ['governance-overview', 'requests', 'retention', 'exports'].includes(tab)
+    : ['governance-overview', 'requests'].includes(tab)
     ? 'governance'
-    : ['integrations-overview', 'int-payments', 'int-ai', 'int-email', 'int-storage', 'webhooks'].includes(tab)
+    : ['integrations-overview', 'int-email', 'webhooks'].includes(tab)
     ? 'integrations'
-    : ['features', 'configuration', 'cfg-general', 'cfg-marketplace', 'cfg-ai', 'cfg-uploads'].includes(tab)
+    : ['features', 'configuration'].includes(tab)
     ? 'configuration'
     : 'system';
 
@@ -129,16 +110,16 @@ export function SystemSecurityGovernanceView({
           eyebrow={`Control Plane / ${gateModule.toUpperCase()}`}
           title={
             gateModule === 'system'
-              ? 'System Operations, Infrastructure & Backups'
+              ? 'System Health & Infrastructure'
               : gateModule === 'security'
-              ? 'Platform Security, Sessions & Append-Only Audit Logs'
+              ? 'Platform Audit Logs'
               : gateModule === 'governance'
-              ? 'Data Governance, Privacy Retention & Exports'
+              ? 'Data Governance & Privacy Requests'
               : gateModule === 'integrations'
               ? 'Service Integrations & Webhooks'
               : 'Feature Flags & Global Platform Settings'
           }
-          subtitle="Real backend probe checks, PostgreSQL/SMTP wiring, immutable governance audit logs, feature rollout gates, and high-risk action safeguards."
+          subtitle="Real backend probe checks, PostgreSQL/Resend wiring, immutable governance audit logs, feature rollout gates, and high-risk action safeguards."
           actions={
             <Button
               variant="outline"
@@ -157,10 +138,7 @@ export function SystemSecurityGovernanceView({
         {/* Quick Context Tabs */}
         <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:flex-wrap text-xs">
           {[
-            ['Health & SMTP/DB', '/admin/system/health'],
-            ['Logs', '/admin/system/logs'],
-            ['Backups', '/admin/system/backups'],
-            ['Security Events', '/admin/security/events'],
+            ['Health & Email/DB', '/admin/system/health'],
             ['Audit Logs', '/admin/security/audit'],
             ['Privacy Requests', '/admin/governance/requests'],
             ['Webhooks', '/admin/integrations/webhooks'],
@@ -177,64 +155,28 @@ export function SystemSecurityGovernanceView({
           ))}
         </div>
 
-        {/* SYSTEM OPERATIONS & LIVE DB/SMTP INFRASTRUCTURE */}
+        {/* SYSTEM OPERATIONS & LIVE DB/EMAIL INFRASTRUCTURE */}
         {gateModule === 'system' && (
           <div className="space-y-6">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <MetricCard label="Backend :4000 Probe" value={isLiveBackend ? 'HEALTHY' : 'DEMO / AUTH REQUIRED'} icon={<Server className="w-4 h-4 text-emerald-600" />} />
+              <MetricCard label="Backend :4000 Probe" value={isLiveBackend ? 'HEALTHY' : 'UNREACHABLE / NOT SIGNED IN'} icon={<Server className="w-4 h-4 text-emerald-600" />} />
               <MetricCard label="Probe Latency" value={backendLatencyMs != null ? `${backendLatencyMs} ms` : 'Unprobed'} icon={<Activity className="w-4 h-4" />} />
-              <MetricCard label="Persistence Layer" value={backendHealth?.persistence || 'In-Memory / Demo'} icon={<Database className="w-4 h-4 text-indigo-600" />} />
+              <MetricCard label="Persistence Layer" value={backendHealth?.persistence || 'Unknown'} icon={<Database className="w-4 h-4 text-indigo-600" />} />
               <MetricCard label="Maintenance Mode" value={settings.maintenanceMode.enabled ? 'ENABLED' : 'OFF'} icon={<AlertTriangle className="w-4 h-4" />} />
             </div>
 
             {tab === 'health' && (
-              <SectionPanel title="Live SMTP & Supabase / PostgreSQL Infrastructure Configuration" subtitle="Direct connection to /api/v1/admin/infrastructure/*">
-                <InfrastructureConfig />
+              <SectionPanel title="Live Resend Email & Supabase / PostgreSQL Infrastructure Configuration" subtitle="Direct connection to /api/v1/admin/infrastructure/*">
+                {canInfra ? (
+                  <InfrastructureConfig />
+                ) : (
+                  <p className="text-xs text-slate-600">Database and email settings contain secrets and can only be viewed and changed by a Super Admin.</p>
+                )}
               </SectionPanel>
             )}
 
-            {tab === 'logs' && (
-              <SectionPanel title="Masked Application Logs & Background Workers" subtitle="PII tokens, passwords, and API secrets are redacted automatically.">
-                <div className="space-y-2 font-mono text-[11px] overflow-x-auto">
-                  <div className="p-2.5 rounded bg-slate-900 text-emerald-400 break-all">
-                    [INFO] service=vton-backend req_id=corr_8841 path=/health status=200 latency={backendLatencyMs ?? 12}ms
-                  </div>
-                  <div className="p-2.5 rounded bg-slate-900 text-amber-300 break-all">
-                    [WARN] service=webhook-worker event=invoice.payment_failed target=stripe status=retrying tenant=tenant_012
-                  </div>
-                  <div className="p-2.5 rounded bg-slate-900 text-slate-300 break-all">
-                    [AUDIT] service=auth-guard masked_actor=ad***@vton-platform.io role=SUPER_ADMIN cross_tenant_check=ENFORCED
-                  </div>
-                </div>
-              </SectionPanel>
-            )}
-
-            {tab === 'backups' && (
-              <SectionPanel title="Backups, Recovery & High-Risk Maintenance Gate">
-                <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl border border-slate-200 text-xs">
-                  <div>
-                    <p className="font-bold text-slate-900">Production Snapshot Restore</p>
-                    <p className="text-slate-500">Destructive recovery requires two-person elevated Super Admin approval.</p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() =>
-                      setConfirmCritical({
-                        title: 'Trigger Database Snapshot Restore?',
-                        desc: 'Overwrites active state from point-in-time recovery snapshot.',
-                        twoPerson: 'Destructive backup restoration requires two-person executive approval.',
-                        onRun: (reason) => {
-                          recordAudit('BACKUP_RESTORE_REQUESTED', 'PostgreSQL Primary', 'Logged restore approval workflow', undefined, reason);
-                          notify('Recorded two-person restore request in audit trail (dry-run safeguard).');
-                        },
-                      })
-                    }
-                  >
-                    Request Restore
-                  </Button>
-                </div>
-
+            {tab === 'health' && (
+              <SectionPanel title="Platform Maintenance Mode">
                 <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl border border-rose-200 bg-rose-50/40 text-xs">
                   <div>
                     <p className="font-bold text-slate-900">Global Platform Maintenance Mode</p>
@@ -248,14 +190,13 @@ export function SystemSecurityGovernanceView({
                         title: settings.maintenanceMode.enabled ? 'Disable Maintenance Mode?' : 'Enable Global Maintenance Mode?',
                         desc: 'Changes public ingress availability across storefronts and try-on endpoints.',
                         twoPerson: 'Maintenance mode toggle requires second administrator sign-off.',
-                        onRun: (reason) => {
+                        onRun: () => {
                           updateSettings({
                             maintenanceMode: {
                               ...settings.maintenanceMode,
                               enabled: !settings.maintenanceMode.enabled,
                             },
                           });
-                          recordAudit('MAINTENANCE_MODE_TOGGLED', 'Platform Ingress', `Enabled: ${!settings.maintenanceMode.enabled}`, undefined, reason);
                           notify(`Maintenance mode ${!settings.maintenanceMode.enabled ? 'ENABLED' : 'DISABLED'}.`);
                         },
                       })
@@ -272,28 +213,6 @@ export function SystemSecurityGovernanceView({
         {/* SECURITY & IMMUTABLE AUDIT LOGS */}
         {gateModule === 'security' && (
           <div className="space-y-6">
-            <SectionPanel title="Security Intrusion & Isolation Events">
-              <div className="space-y-2 text-xs">
-                {safeSecurity.map((ev) => (
-                  <div key={ev.id} className="p-3 sm:p-3.5 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-bold text-slate-900 break-words">{ev.type} — {ev.actor} (IP {ev.ipMasked})</p>
-                      <p className="text-slate-600 break-words">{ev.details} • {ev.timestamp}</p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 shrink-0">
-                      <StatusPill status={ev.severity} />
-                      <StatusPill status={ev.status} />
-                      {ev.status === 'OPEN' && (
-                        <Button size="sm" variant="outline" onClick={() => { updateSecurityEvent(ev.id, 'ACKNOWLEDGED'); notify(`Acknowledged ${ev.id}.`); }}>
-                          Acknowledge
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </SectionPanel>
-
             <SectionPanel
               title="Append-Only Platform Audit Trail"
               subtitle="Secrets, passwords, payment PANs, and tokens are strictly excluded from audit records."
@@ -359,7 +278,7 @@ export function SystemSecurityGovernanceView({
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
                     <StatusPill status={r.status} />
                     {r.status !== 'COMPLETED' && (
-                      <Button size="sm" variant="outline" onClick={() => { updateDataRequest(r.id, 'COMPLETED'); notify(`Completed governance request ${r.id}.`); }}>
+                      <Button size="sm" variant="outline" onClick={async () => { if (await updateDataRequest(r.id, 'COMPLETED')) notify(`Completed governance request ${r.id}.`); }}>
                         Execute Policy
                       </Button>
                     )}
@@ -373,21 +292,26 @@ export function SystemSecurityGovernanceView({
         {/* INTEGRATIONS & WEBHOOKS */}
         {gateModule === 'integrations' && (
           <div className="space-y-6">
-            {tab === 'int-email' || tab === 'int-storage' ? (
-              <SectionPanel title="Live SMTP & Database Integration Controls">
-                <InfrastructureConfig />
+            {tab === 'int-email' ? (
+              <SectionPanel title="Live Email & Database Integration Controls">
+                {canInfra ? (
+                  <InfrastructureConfig />
+                ) : (
+                  <p className="text-xs text-slate-600">Database and email settings contain secrets and can only be viewed and changed by a Super Admin.</p>
+                )}
               </SectionPanel>
             ) : null}
 
             <SectionPanel title="Platform Event Webhooks & Retry Monitor">
               <form
                 className="flex flex-col sm:flex-row gap-2 pb-2"
-                onSubmit={(e) => {
+                onSubmit={async (e) => {
                   e.preventDefault();
                   if (!whUrl.trim()) return;
-                  addWebhook(whUrl.trim(), ['tenant.created', 'subscription.updated', 'tryon.failed']);
-                  setWhUrl('');
-                  notify('Registered webhook endpoint.');
+                  if (await addWebhook(whUrl.trim(), ['tenant.created', 'subscription.updated', 'tryon.failed'])) {
+                    setWhUrl('');
+                    notify('Registered webhook endpoint.');
+                  }
                 }}
               >
                 <input type="url" required value={whUrl} onChange={(e) => setWhUrl(e.target.value)} placeholder="https://ops-alerts.yourcompany.io/webhook" className="w-full sm:flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-mono" />
@@ -402,9 +326,6 @@ export function SystemSecurityGovernanceView({
                     </div>
                     <div className="flex flex-wrap items-center gap-2 shrink-0">
                       <StatusPill status={String(w.lastResponseCode)} />
-                      <Button size="sm" variant="outline" onClick={() => { retryWebhook(w.id); notify('Queued webhook redelivery.'); }}>
-                        Retry
-                      </Button>
                     </div>
                   </div>
                 ))}
@@ -433,9 +354,10 @@ export function SystemSecurityGovernanceView({
                         size="sm"
                         variant={fl.globalEnabled ? 'outline' : 'default'}
                         disabled={!canConfig}
-                        onClick={() => {
-                          toggleFeatureFlag(fl.key, { globalEnabled: !fl.globalEnabled });
-                          notify(`${fl.key} ${!fl.globalEnabled ? 'enabled' : 'disabled'}.`);
+                        onClick={async () => {
+                          if (await toggleFeatureFlag(fl.key, { globalEnabled: !fl.globalEnabled })) {
+                            notify(`${fl.key} ${!fl.globalEnabled ? 'enabled' : 'disabled'}.`);
+                          }
                         }}
                       >
                         {fl.globalEnabled ? 'Disable' : 'Enable'}
