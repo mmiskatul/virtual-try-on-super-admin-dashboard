@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -17,8 +17,7 @@ import {
 import { usePlatformStore } from '../../stores/usePlatformStore';
 import { useAdminUiStore } from '../../stores/useAdminUiStore';
 import { useMounted } from '../../hooks/useMounted';
-import { platformService } from '../../services/platformService';
-import { canAdminPerform } from '../../config/permissions';
+import { usePermissions } from '../../hooks/usePermissions';
 import { TenantLifecycleStatus } from '../../types';
 import {
   AdminPageHeader,
@@ -54,8 +53,7 @@ export function TenantGovernanceView({
   const router = useRouter();
   const mounted = useMounted();
   const isLiveBackend = usePlatformStore((s) => s.isLiveBackend);
-  const activeRole = usePlatformStore((s) => s.activeRole);
-  const roleOverrides = usePlatformStore((s) => s.roleOverrides);
+  const { can } = usePermissions();
   const tenants = usePlatformStore((s) => s.tenants);
   const users = usePlatformStore((s) => s.users);
   const modProducts = usePlatformStore((s) => s.modProducts);
@@ -67,9 +65,10 @@ export function TenantGovernanceView({
 
   const createTenant = usePlatformStore((s) => s.createTenant);
   const updateTenantLifecycle = usePlatformStore((s) => s.updateTenantLifecycle);
-  const updateTenantPlanLocal = usePlatformStore((s) => s.updateTenantPlanLocal);
+  const updateTenantPlan = usePlatformStore((s) => s.updateTenantPlan);
   const addTenantNote = usePlatformStore((s) => s.addTenantNote);
   const assignSupportAgent = usePlatformStore((s) => s.assignSupportAgent);
+  const loadTenantAdminContext = usePlatformStore((s) => s.loadTenantAdminContext);
   const startImpersonation = usePlatformStore((s) => s.startImpersonation);
 
   const showToast = useAdminUiStore((s) => s.showToast);
@@ -99,12 +98,20 @@ export function TenantGovernanceView({
   // Detail tab internal controls
   const [subTab, setSubTab] = useState<TenantSubTab>(detailTab);
   const [noteDraft, setNoteDraft] = useState('');
+  const [agentDraft, setAgentDraft] = useState('');
+
+  // Notes and the assigned agent live on the backend; load them whenever a tenant page opens or the data refreshes.
+  useEffect(() => {
+    if (mode === 'detail' && tenantId && isLiveBackend) void loadTenantAdminContext(tenantId);
+  }, [mode, tenantId, isLiveBackend, loadTenantAdminContext]);
   const [impReason, setImpReason] = useState('');
   const [impMode, setImpMode] = useState<'READ_ONLY' | 'ELEVATED_WRITE'>('READ_ONLY');
 
-  const canSuspend = canAdminPerform(activeRole, 'tenants', 'suspend', roleOverrides);
-  const canEdit = canAdminPerform(activeRole, 'tenants', 'edit', roleOverrides);
-  const canCreate = canAdminPerform(activeRole, 'tenants', 'create', roleOverrides);
+  const canSuspend = can('tenants', 'suspend');
+  const canEdit = can('tenants', 'edit');
+  const canCreate = can('tenants', 'create');
+  const canViewAs = can('tenants', 'view_as');
+  const canChangePlan = can('subscriptions', 'configure');
 
   const safeTenants = mounted ? tenants : [];
 
@@ -118,15 +125,8 @@ export function TenantGovernanceView({
     next: TenantLifecycleStatus,
     reason: string
   ) => {
-    try {
-      if (isLiveBackend && (next === 'ACTIVE' || next === 'SUSPENDED')) {
-        await platformService.setTenantStatus(id, next);
-      }
-      updateTenantLifecycle(id, next, reason);
+    if (await updateTenantLifecycle(id, next, reason)) {
       notify(`Tenant ${id} transitioned to ${next}.`);
-    } catch (err: any) {
-      updateTenantLifecycle(id, next, reason);
-      notify(err?.message || `Updated locally (backend rejected transition).`);
     }
   };
 
@@ -155,43 +155,21 @@ export function TenantGovernanceView({
           <SectionPanel title="Merchant Organization & Entitlements">
             <form
               className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs"
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
                 const slug = (newBrandName || newBizName)
                   .toLowerCase()
                   .replace(/[^a-z0-9]+/g, '-')
                   .replace(/^-|-$/g, '');
-                const chosenPlan = plans.find((p) => p.slug.toUpperCase() === newPlan) || plans[2];
-                const created = createTenant({
+                const created = await createTenant({
                   name: newBrandName.trim(),
-                  legalName: newBizName.trim() || newBrandName.trim(),
                   slug: slug || `brand-${Date.now()}`,
-                  owner: newOwnerName.trim(),
-                  email: newOwnerEmail.trim(),
-                  phone: newPhone.trim(),
-                  country: newCountry,
-                  status: newStatus === 'SUSPENDED' ? 'SUSPENDED' : 'ACTIVE',
-                  lifecycleStatus: newStatus,
-                  subscriptionStatus: newStatus === 'TRIAL' ? 'TRIALING' : 'ACTIVE',
-                  plan: newPlan,
-                  group: 'NEW_COHORT',
-                  verificationStatus: 'UNDER_REVIEW',
-                  productsCount: 0,
-                  marketplacePublishedCount: 0,
-                  ordersCount: 0,
-                  gmv: 0,
-                  tryOnUsed: 0,
-                  tryOnQuota: chosenPlan?.limits.monthlyAiCredits || 5000,
-                  monthlySpend: chosenPlan?.monthlyPrice || 99,
-                  storageUsedMb: 0,
-                  storageLimitMb: chosenPlan?.limits.storageQuotaMb || 10240,
-                  apiRequests30d: 0,
-                  teamCount: 1,
-                  retentionGraceDays: 30,
-                  joinedDate: new Date().toISOString().slice(0, 10),
+                  contactEmail: newOwnerEmail.trim(),
+                  planSlug: newPlan,
                 });
-                notify(`Provisioned ${created.name} and queued invitation to ${created.email}.`);
-                router.push(`/admin/tenants/${created.id}`);
+                if (!created.ok) return;
+                notify(`Provisioned ${newBrandName.trim()} and queued invitation to ${newOwnerEmail.trim()}.`);
+                router.push(created.id ? `/admin/tenants/${created.id}` : '/admin/tenants');
               }}
             >
               <label className="space-y-1">
@@ -382,10 +360,11 @@ export function TenantGovernanceView({
                         </select>
                         <Button
                           size="sm"
-                          disabled={!impReason.trim() || !canEdit}
-                          onClick={() => {
-                            startImpersonation(tenant.id, impMode, impReason.trim());
-                            notify(`Started ${impMode} view-as session for ${tenant.name}.`);
+                          disabled={!impReason.trim() || !canViewAs}
+                          onClick={async () => {
+                            if (await startImpersonation(tenant.id, impMode, impReason.trim())) {
+                              notify(`Started ${impMode} view-as session for ${tenant.name}.`);
+                            }
                           }}
                           className="gap-1.5 bg-amber-600 hover:bg-amber-700 text-white"
                         >
@@ -407,10 +386,11 @@ export function TenantGovernanceView({
                         <Button
                           size="sm"
                           disabled={!noteDraft.trim() || !canEdit}
-                          onClick={() => {
-                            addTenantNote(tenant.id, noteDraft.trim());
-                            setNoteDraft('');
-                            notify('Added internal note.');
+                          onClick={async () => {
+                            if (await addTenantNote(tenant.id, noteDraft.trim())) {
+                              setNoteDraft('');
+                              notify('Added internal note.');
+                            }
                           }}
                           className="w-full sm:w-auto"
                         >
@@ -460,17 +440,15 @@ export function TenantGovernanceView({
                         <p className="text-slate-500">Monthly Spend: ৳{tenant.monthlySpend} BDT</p>
                       </div>
                       <select
-                        disabled={!canEdit}
+                        disabled={!canChangePlan}
                         value={tenant.plan}
                         onChange={async (e) => {
                           const planSlug = e.target.value;
                           const matched = plans.find((p) => p.slug.toUpperCase() === planSlug);
                           const quota = matched?.limits.monthlyAiCredits || 5000;
-                          if (isLiveBackend && ['STARTER', 'PRO', 'ENTERPRISE'].includes(planSlug)) {
-                            await platformService.updateTenantPlan(tenant.id, { plan: planSlug, tryOnMonthlyQuota: quota }).catch(() => {});
+                          if (await updateTenantPlan(tenant.id, planSlug, quota)) {
+                            notify(`Updated ${tenant.name} to ${planSlug}.`);
                           }
-                          updateTenantPlanLocal(tenant.id, planSlug, quota);
-                          notify(`Updated ${tenant.name} to ${planSlug}.`);
                         }}
                         className="rounded-lg border border-slate-200 px-3 py-1.5 bg-white font-bold"
                       >
@@ -609,12 +587,28 @@ export function TenantGovernanceView({
                     >
                       Schedule Offboarding ({tenant.retentionGraceDays}d Grace)
                     </Button>
+                    <select
+                      value={agentDraft}
+                      onChange={(e) => setAgentDraft(e.target.value)}
+                      className="rounded-lg border border-slate-200 px-2 py-1.5 bg-white text-xs"
+                    >
+                      <option value="">Choose support agent…</option>
+                      {users
+                        .filter((u) => u.category === 'SUPER_ADMIN' || u.category === 'PLATFORM_STAFF')
+                        .map((u) => (
+                          <option key={u.id} value={u.id}>{u.name || u.email} ({u.roleLabel})</option>
+                        ))}
+                    </select>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => {
-                        assignSupportAgent(tenant.id, 'Nusrat Jahan');
-                        notify('Assigned support agent Nusrat Jahan.');
+                      disabled={!agentDraft || !canEdit}
+                      onClick={async () => {
+                        const agent = users.find((u) => u.id === agentDraft);
+                        if (await assignSupportAgent(tenant.id, agentDraft)) {
+                          notify(`Assigned support agent ${agent?.name || agent?.email || ''}.`);
+                          setAgentDraft('');
+                        }
                       }}
                     >
                       Assign Support Agent
