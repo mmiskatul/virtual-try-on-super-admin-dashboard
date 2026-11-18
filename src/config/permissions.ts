@@ -1,185 +1,104 @@
-import { PlatformAction, PlatformModule, PlatformRole } from '../types';
+import { PlatformAction, PlatformModule } from '../types';
 
-export const ALL_PLATFORM_MODULES: PlatformModule[] = [
-  'overview',
-  'tenants',
-  'users',
-  'staff',
-  'subscriptions',
-  'finance',
-  'ai',
-  'tryon',
-  'marketplace',
-  'cms',
-  'support',
-  'communications',
-  'marketing',
-  'system',
-  'security',
-  'governance',
-  'integrations',
-  'configuration',
-  'analytics',
-];
+/**
+ * Dashboard permissions are NOT defined here. The backend owns roles and permissions
+ * (Virtual-Try-On-Backend/src/modules/rbac/rbac.catalog.ts) and enforces them on every route. After sign-in the
+ * dashboard loads the signed-in admin's real permission set (GET /api/v1/auth/rbac/me) and this file only answers
+ * "which backend permission does this screen or button need?" so the UI can hide what the backend would refuse.
+ *
+ * Hiding a button is a convenience, never a security control.
+ */
 
-export const ALL_PLATFORM_ACTIONS: PlatformAction[] = [
-  'view',
-  'create',
-  'edit',
-  'delete',
-  'approve',
-  'suspend',
-  'publish',
-  'refund',
-  'export',
-  'configure',
-  'manage_users',
-];
+/** Backend permission keys that unlock a (module, action) in the dashboard. Any one of them is enough. */
+type Needs = string[] | 'EVERYONE';
 
-export const ROLE_METADATA: Record<
-  string,
-  { label: string; summary: string; mfaRequired: boolean }
-> = {
-  SUPER_ADMIN: {
-    label: 'Super Admin',
-    summary: 'Full authorized platform control across operations, billing, AI, security, and governance.',
-    mfaRequired: true,
+const SUPER = '*:*';
+
+/** Actions that only read data. Everything else is treated as a change. */
+const READ_ACTIONS: PlatformAction[] = ['view', 'export'];
+
+const NEEDS: Partial<Record<PlatformModule, { read: Needs; write: Record<string, Needs>; fallbackWrite: Needs }>> = {
+  overview: { read: 'EVERYONE', write: {}, fallbackWrite: [SUPER] },
+  analytics: { read: ['tenants:read', 'billing:read', 'ai:read'], write: {}, fallbackWrite: [SUPER] },
+  tenants: {
+    read: ['tenants:read'],
+    write: {
+      create: ['tenants:write'],
+      edit: ['tenants:write'],
+      suspend: ['tenants:suspend'],
+      approve: ['tenants:suspend'],
+      delete: ['tenants:suspend'],
+      view_as: ['tenants:view_as'],
+    },
+    fallbackWrite: ['tenants:write'],
   },
-  PLATFORM_OWNER: {
-    label: 'Platform Owner',
-    summary: 'Highest governance tier including destructive approvals and executive configuration.',
-    mfaRequired: true,
+  users: {
+    read: ['users:read'],
+    write: { suspend: ['users:suspend'], manage_users: ['staff:manage'], edit: ['users:write'], create: ['users:write'] },
+    fallbackWrite: ['users:write'],
   },
-  OPERATIONS_MANAGER: {
-    label: 'Operations Manager',
-    summary: 'Manages tenant lifecycle, system monitoring, background queues, and incidents.',
-    mfaRequired: true,
+  staff: { read: ['staff:manage'], write: {}, fallbackWrite: ['staff:manage'] },
+  subscriptions: { read: ['plans:read', 'billing:read'], write: {}, fallbackWrite: ['billing:write'] },
+  finance: {
+    read: ['billing:read'],
+    write: { refund: ['billing:refund'], approve: ['billing:refund'] },
+    fallbackWrite: ['billing:write'],
   },
-  FINANCE_MANAGER: {
-    label: 'Finance Manager',
-    summary: 'Controls subscriptions, invoices, refunds, and financial reconciliation.',
-    mfaRequired: true,
-  },
-  SUPPORT_MANAGER: {
-    label: 'Support Manager',
-    summary: 'Manages support escalations, KB, and controlled read-only tenant view-as access.',
-    mfaRequired: true,
-  },
-  SUPPORT_AGENT: {
-    label: 'Support Agent',
-    summary: 'Handles assigned support tickets with restricted tenant context.',
-    mfaRequired: false,
-  },
-  MARKETPLACE_MODERATOR: {
-    label: 'Marketplace Moderator',
-    summary: 'Reviews product listings, brand verification, collections, and policy reports.',
-    mfaRequired: false,
-  },
-  AI_OPS_ENGINEER: {
-    label: 'AI Operations Engineer',
-    summary: 'Configures AI providers, model routing, generation queues, and credit costs.',
-    mfaRequired: true,
-  },
-  SECURITY_ADMIN: {
-    label: 'Security Administrator',
-    summary: 'Monitors security events, active sessions, audit logs, and data governance.',
-    mfaRequired: true,
-  },
-  ANALYST: {
-    label: 'Business Analyst',
-    summary: 'Read-only access to approved analytics and platform-wide reports.',
-    mfaRequired: false,
-  },
+  ai: { read: ['ai:read'], write: {}, fallbackWrite: ['ai:manage'] },
+  tryon: { read: ['ai:read'], write: {}, fallbackWrite: ['ai:manage'] },
+  marketplace: { read: ['moderation:read'], write: {}, fallbackWrite: ['moderation:action'] },
+  cms: { read: ['cms:manage'], write: {}, fallbackWrite: ['cms:manage'] },
+  support: { read: ['support:read'], write: {}, fallbackWrite: ['support:manage'] },
+  // Infrastructure (database, email, AI keys) is Super Admin only on the backend.
+  system: { read: ['security:manage'], write: {}, fallbackWrite: [SUPER] },
+  integrations: { read: ['security:manage'], write: {}, fallbackWrite: ['security:manage'] },
+  configuration: { read: ['security:manage'], write: {}, fallbackWrite: ['security:manage'] },
+  security: { read: ['audit:read', 'security:manage'], write: {}, fallbackWrite: ['security:manage'] },
+  governance: { read: ['security:manage'], write: {}, fallbackWrite: ['security:manage'] },
 };
 
-export const DEFAULT_ADMIN_PERMISSIONS: Record<
-  string,
-  Partial<Record<PlatformModule, PlatformAction[]>>
-> = {
-  SUPER_ADMIN: Object.fromEntries(ALL_PLATFORM_MODULES.map((m) => [m, ALL_PLATFORM_ACTIONS])),
-  PLATFORM_OWNER: Object.fromEntries(ALL_PLATFORM_MODULES.map((m) => [m, ALL_PLATFORM_ACTIONS])),
-  OPERATIONS_MANAGER: {
-    overview: ['view', 'export'],
-    tenants: ['view', 'create', 'edit', 'approve', 'suspend', 'export'],
-    users: ['view'],
-    system: ['view', 'configure', 'export'],
-    analytics: ['view', 'export'],
-    support: ['view', 'edit'],
-  },
-  FINANCE_MANAGER: {
-    overview: ['view'],
-    tenants: ['view'],
-    subscriptions: ['view', 'create', 'edit', 'configure', 'export'],
-    finance: ['view', 'approve', 'refund', 'export', 'configure'],
-    analytics: ['view', 'export'],
-  },
-  SUPPORT_MANAGER: {
-    overview: ['view'],
-    tenants: ['view', 'edit'],
-    users: ['view', 'edit'],
-    support: ['view', 'create', 'edit', 'approve', 'export'],
-    communications: ['view', 'create', 'publish'],
-    cms: ['view', 'edit'],
-  },
-  SUPPORT_AGENT: {
-    overview: ['view'],
-    tenants: ['view'],
-    users: ['view'],
-    support: ['view', 'edit'],
-  },
-  MARKETPLACE_MODERATOR: {
-    overview: ['view'],
-    tenants: ['view'],
-    marketplace: ['view', 'approve', 'suspend', 'publish', 'edit'],
-    cms: ['view', 'edit', 'publish'],
-    analytics: ['view'],
-  },
-  AI_OPS_ENGINEER: {
-    overview: ['view'],
-    ai: ['view', 'create', 'edit', 'configure', 'export'],
-    tryon: ['view', 'edit', 'configure', 'export'],
-    system: ['view', 'configure'],
-    integrations: ['view', 'configure'],
-    analytics: ['view', 'export'],
-  },
-  SECURITY_ADMIN: {
-    overview: ['view'],
-    users: ['view', 'suspend', 'manage_users'],
-    staff: ['view', 'edit', 'manage_users'],
-    security: ['view', 'approve', 'suspend', 'configure', 'export'],
-    governance: ['view', 'approve', 'export', 'configure'],
-    configuration: ['view', 'configure'],
-    system: ['view'],
-  },
-  ANALYST: {
-    overview: ['view', 'export'],
-    tenants: ['view', 'export'],
-    subscriptions: ['view', 'export'],
-    finance: ['view', 'export'],
-    ai: ['view', 'export'],
-    tryon: ['view', 'export'],
-    marketplace: ['view', 'export'],
-    analytics: ['view', 'export'],
-  },
-};
-
-export const TWO_PERSON_APPROVAL_ACTIONS = [
-  'TENANT_PERMANENT_DELETE',
-  'FINANCIAL_REFUND_OVER_500',
-  'GLOBAL_MAINTENANCE_MODE',
-  'PRODUCTION_DATABASE_RESTORE',
-  'SUPER_ADMIN_ROLE_ESCALATION',
-];
-
-export function canAdminPerform(
-  role: PlatformRole,
-  module: PlatformModule,
-  action: PlatformAction,
-  overrides?: Record<string, Partial<Record<PlatformModule, PlatformAction[]>>>
-): boolean {
-  const custom = overrides?.[role]?.[module];
-  if (custom) return custom.includes(action);
-  const base = DEFAULT_ADMIN_PERMISSIONS[role]?.[module] || [];
-  return base.includes(action);
+export interface RbacState {
+  /** false until the backend has answered, or when it is unreachable */
+  loaded: boolean;
+  role: string;
+  roleCodes: string[];
+  permissions: string[];
 }
 
+export const EMPTY_RBAC: RbacState = { loaded: false, role: '', roleCodes: [], permissions: [] };
+
+/** Same wildcard rules as the backend's hasPermission(): "*:*", exact match, or "module:*". */
+export function hasBackendPermission(permissions: string[], key: string): boolean {
+  if (permissions.includes(SUPER) || permissions.includes(key)) return true;
+  const [mod] = key.split(':');
+  return Boolean(mod) && permissions.includes(`${mod}:*`);
+}
+
+export function canPerform(
+  rbac: RbacState,
+  module: PlatformModule,
+  action: PlatformAction | 'view_as'
+): boolean {
+  const rule = NEEDS[module];
+  const isRead = (READ_ACTIONS as string[]).includes(action);
+
+  // Before the permission set is known, show read-only screens (the backend still enforces) and hide changes.
+  if (!rbac.loaded) return isRead;
+
+  // Modules we have no rule for stay Super Admin only rather than open to everyone.
+  if (!rule) return hasBackendPermission(rbac.permissions, SUPER);
+
+  const needs: Needs = isRead ? rule.read : rule.write[action] ?? rule.fallbackWrite;
+  if (needs === 'EVERYONE') return true;
+  return needs.some((key) => hasBackendPermission(rbac.permissions, key));
+}
+
+/** "PLATFORM_OPERATIONS_ADMIN" -> "Platform Operations Admin" */
+export function formatRoleLabel(code: string): string {
+  if (!code) return 'Unknown role';
+  return code
+    .toLowerCase()
+    .split('_')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
