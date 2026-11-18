@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { PlatformAction, PlatformModule } from '../../types';
 import { usePermissions } from '../../hooks/usePermissions';
-import { usePlatformStore } from '../../stores/usePlatformStore';
 import { Button } from '../ui/button';
 
 export function StatusPill({ status }: { status: string }) {

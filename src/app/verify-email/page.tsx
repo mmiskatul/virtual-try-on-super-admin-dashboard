@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { signIn, getSession } from 'next-auth/react';

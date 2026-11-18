@@ -1,21 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import {
   Activity,
   AlertTriangle,
   Database,
   Download,
-  Flag,
-  Lock,
-  Plug,
   RefreshCw,
   Server,
-  Settings,
-  Shield,
-  ShieldAlert,
-  Sliders,
 } from 'lucide-react';
 import { InfrastructureConfig } from '../../components/modules/InfrastructureConfig';
 import { usePlatformStore } from '../../stores/usePlatformStore';
@@ -72,7 +65,7 @@ export function SystemSecurityGovernanceView({
   const showToast = useAdminUiStore((s) => s.showToast);
   const hideToast = useAdminUiStore((s) => s.hideToast);
 
-  const [tab, setTab] = useState<GovernanceAreaTab>(initialTab);
+  const [tab] = useState<GovernanceAreaTab>(initialTab);
   const [whUrl, setWhUrl] = useState('');
   const [confirmCritical, setConfirmCritical] = useState<{
     title: string;

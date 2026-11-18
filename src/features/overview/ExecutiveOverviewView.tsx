@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   Activity,
-  AlertTriangle,
   Building2,
   CheckCircle2,
   Coins,

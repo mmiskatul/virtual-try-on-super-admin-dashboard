@@ -1,19 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import {
-  CheckCircle2,
   CreditCard,
   Layers,
-  Plus,
   Sparkles,
   TrendingUp,
 } from 'lucide-react';
 import { usePlatformStore } from '../../stores/usePlatformStore';
 import { useAdminUiStore } from '../../stores/useAdminUiStore';
 import { useMounted } from '../../hooks/useMounted';
-import { platformService } from '../../services/platformService';
 import { PlanEntitlement } from '../../types';
 import {
   AdminPageHeader,
@@ -48,7 +45,6 @@ export function SubscriptionsPlansView({
   subscriptionId?: string;
 }) {
   const mounted = useMounted();
-  const isLiveBackend = usePlatformStore((s) => s.isLiveBackend);
   const { can } = usePermissions();
   const plans = usePlatformStore((s) => s.plans);
   const subscriptions = usePlatformStore((s) => s.subscriptions);

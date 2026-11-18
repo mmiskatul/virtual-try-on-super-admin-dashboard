@@ -1,17 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import {
-  CheckCircle2,
-  FileText,
   Flag,
   Globe,
-  Layers,
-  Plus,
   ShieldCheck,
   Sparkles,
-  Tag,
 } from 'lucide-react';
 import { usePlatformStore } from '../../stores/usePlatformStore';
 import { useAdminUiStore } from '../../stores/useAdminUiStore';
@@ -22,7 +17,6 @@ import {
   AdminPermissionGate,
   ConfirmActionDialog,
   EmptyPanel,
-  InlineAlert,
   MetricCard,
   SectionPanel,
   StatusPill,

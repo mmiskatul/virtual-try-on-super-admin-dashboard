@@ -13,7 +13,6 @@ import {
 } from '../types';
 import { store } from '../store';
 import { createSliceFacadeHook } from '../store/hooks';
-import type { RevenuePoint } from '../lib/controlPlaneMappers';
 import { selectPlatformState } from '../store/selectors';
 import { platformActions } from '../store/slices/platformSlice';
 import {

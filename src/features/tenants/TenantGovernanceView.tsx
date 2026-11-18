@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  AlertTriangle,
   Building2,
   CheckCircle2,
   Eye,

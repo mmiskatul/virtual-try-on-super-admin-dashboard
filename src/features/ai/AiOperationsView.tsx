@@ -4,15 +4,9 @@ import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   Activity,
-  AlertTriangle,
-  CheckCircle2,
   Coins,
   Cpu,
   EyeOff,
-  Layers,
-  RefreshCw,
-  ShieldAlert,
-  Sparkles,
   XCircle,
 } from 'lucide-react';
 import { AiInfrastructure } from '../../components/modules/AiInfrastructure';
@@ -203,7 +197,6 @@ export function AiOperationsView({
     );
   }
 
-  const completedJobs = safeJobs.filter((j) => j.status === 'COMPLETED');
   const failedJobs = safeJobs.filter((j) => j.status === 'FAILED');
   const queueJobs = safeJobs.filter((j) => j.status === 'QUEUED' || j.status === 'PROCESSING');
 

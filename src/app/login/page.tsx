@@ -1,9 +1,9 @@
 'use client';
 
-import React, { Suspense, useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn, getSession, useSession, signOut } from 'next-auth/react';
+import { signIn, getSession, useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, CheckCircle2, Loader2, MailCheck, ShieldCheck, ArrowRight } from 'lucide-react';

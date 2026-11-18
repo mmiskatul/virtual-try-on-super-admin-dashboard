@@ -1,14 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import {
   AlertCircle,
-  CheckCircle2,
   CreditCard,
   DollarSign,
   Download,
-  FileText,
   RotateCcw,
 } from 'lucide-react';
 import { usePlatformStore } from '../../stores/usePlatformStore';

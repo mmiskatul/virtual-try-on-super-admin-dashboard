@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import Link from 'next/link';
 import { Lock, ArrowLeft, ExternalLink } from 'lucide-react';
 import { AuthShell } from '../../components/auth/AuthShell';

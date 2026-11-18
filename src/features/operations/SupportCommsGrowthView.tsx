@@ -1,15 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import {
   AlertTriangle,
-  BookOpen,
   LifeBuoy,
-  Mail,
-  Megaphone,
   MessageSquare,
-  Send,
   TrendingUp,
 } from 'lucide-react';
 import type { SupportTicketRecord } from '../../types';
@@ -20,7 +16,6 @@ import {
   AdminPageHeader,
   AdminPermissionGate,
   EmptyPanel,
-  InlineAlert,
   MetricCard,
   SectionPanel,
   StatusPill,
