@@ -4,11 +4,6 @@ import type { RootState } from './index';
 export const selectPlatformState = (state: RootState) => state.platform;
 export const selectAdminUiState = (state: RootState) => state.adminUi;
 
-export const selectOpenAlerts = createSelector(
-  [(state: RootState) => state.platform.alerts],
-  (alerts) => alerts.filter((a) => a.status === 'OPEN')
-);
-
 export const selectPendingRefunds = createSelector(
   [(state: RootState) => state.platform.refunds],
   (refunds) => refunds.filter((r) => r.status === 'REQUESTED')

@@ -158,10 +158,13 @@ export function mapSubscriptions(rows: Raw[], plans: SubscriptionPlanRecord[]): 
       interval: 'MONTHLY',
       amount: plan?.monthlyPrice ?? 0,
       currency: plan?.currency || 'BDT',
-      status: pick(sub.status, ['ACTIVE', 'PAST_DUE', 'CANCELLED'] as const, 'ACTIVE'),
+      status: pick(sub.status, ['ACTIVE', 'TRIALING', 'PAST_DUE', 'CANCELLED'] as const, 'ACTIVE'),
       paymentProvider: 'MANUAL_INVOICE',
       startedAt: '—',
       renewalDate: '—',
+      ...(Number.isFinite(Number(sub.trialEndsAt)) && Number(sub.trialEndsAt) > 0
+        ? { trialEndsAt: new Date(Number(sub.trialEndsAt)).toISOString().slice(0, 10) }
+        : {}),
     });
   }
   return out;
@@ -295,6 +298,12 @@ export function mapAiRouting(raw: Raw, current: AiRoutingPolicy): AiRoutingPolic
     ...current,
     primaryProvider: str(raw.primaryProvider, current.primaryProvider),
     secondaryProvider: str(raw.fallbackProvider, current.secondaryProvider),
+    // Saved by the dashboard's routing form; kept as-is when the backend has not stored them yet.
+    fallbackModelId: str(raw.fallbackModelId, current.fallbackModelId),
+    timeoutSeconds: num(raw.timeoutSeconds, current.timeoutSeconds),
+    maxRetries: num(raw.maxRetries, current.maxRetries),
+    categoryRoutes:
+      raw.categoryRoutes && typeof raw.categoryRoutes === 'object' ? { ...raw.categoryRoutes } : current.categoryRoutes,
   };
 }
 
@@ -308,8 +317,9 @@ export function mapModerationProducts(rows: Raw[]): ModerationProductItem[] {
     category: str(p.category),
     imageUrl: str(p.image),
     price: num(p.price),
+    // The backend calls "changes requested" FLAGGED.
     moderationStatus: pick(
-      p.moderationStatus,
+      p.moderationStatus === 'FLAGGED' ? 'CHANGES_REQUESTED' : p.moderationStatus,
       ['PENDING_REVIEW', 'APPROVED', 'CHANGES_REQUESTED', 'REJECTED', 'UNPUBLISHED'] as const,
       'PENDING_REVIEW',
     ),
@@ -411,7 +421,14 @@ export function mapSettings(raw: Raw, current: PlatformGlobalSettings): Platform
     ...current,
     platformName: str(raw.platformName, current.platformName),
     maxImageUploadMb: num(raw.maxUploadMb, current.maxImageUploadMb),
-    maintenanceMode: { ...current.maintenanceMode, enabled: Boolean(raw.maintenanceMode) },
+    maintenanceMode:
+      raw.maintenanceMode && typeof raw.maintenanceMode === 'object'
+        ? {
+            ...current.maintenanceMode,
+            enabled: Boolean(raw.maintenanceMode.enabled),
+            message: str(raw.maintenanceMode.message, current.maintenanceMode.message),
+          }
+        : { ...current.maintenanceMode, enabled: Boolean(raw.maintenanceMode) },
   };
 }
 

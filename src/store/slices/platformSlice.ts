@@ -1,7 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import {
   AiModelRecord,
-  AiProviderRecord,
   AiRoutingPolicy,
   AuditEventRecord,
   CmsPageRecord,
@@ -9,22 +8,12 @@ import {
   DataGovernanceRequest,
   FeatureFlagRecord,
   ImpersonationSession,
-  MarketplaceCategory,
-  MarketplaceCollection,
-  MarketplaceReportItem,
-  ModerationBrandItem,
   ModerationProductItem,
   PaymentTransaction,
-  PlatformAction,
-  PlatformAlert,
   PlatformGlobalSettings,
   PlatformInvoice,
-  PlatformModule,
-  PlatformRole,
   PlatformUserRecord,
-  ReconciliationItem,
   RefundRequest,
-  SecurityEventRecord,
   SubscriptionPlanRecord,
   SupportTicketRecord,
   TenantLifecycleStatus,
@@ -33,19 +22,8 @@ import {
   TryOnJobRecord,
   WebhookSubscription,
 } from '../../types';
-import {
-  DEMO_AI_PROVIDERS,
-  DEMO_AI_ROUTING,
-  DEMO_ALERTS,
-  DEMO_CATEGORIES,
-  DEMO_COLLECTIONS,
-  DEMO_MKT_REPORTS,
-  DEMO_MOD_BRANDS,
-  DEMO_PLATFORM_SETTINGS,
-  DEMO_RECONCILIATIONS,
-  DEMO_SECURITY_EVENTS,
-} from '../../data/platformDemoSeed';
-import { DEFAULT_ADMIN_PERMISSIONS } from '../../config/permissions';
+import { DEFAULT_AI_ROUTING, DEFAULT_PLATFORM_SETTINGS } from '../../data/platformDefaults';
+import { EMPTY_RBAC, RbacState } from '../../config/permissions';
 import { mapControlPlaneSnapshot, mapRevenueSeries, RevenuePoint } from '../../lib/controlPlaneMappers';
 
 export interface PlatformSliceState {
@@ -56,10 +34,9 @@ export interface PlatformSliceState {
   backendLatencyMs: number | null;
   backendTelemetry: { overview: any; aiMetrics: any };
 
-  activeRole: PlatformRole;
+  /** The signed-in admin's real role and permissions, loaded from the backend. Never persisted. */
+  rbac: RbacState;
   adminEmail: string;
-  roleOverrides: Record<string, Partial<Record<PlatformModule, PlatformAction[]>>>;
-  customRoles: Array<{ id: string; label: string; summary: string; mfaRequired: boolean }>;
 
   sidebarCollapsed: boolean;
   openGroups: string[];
@@ -74,24 +51,16 @@ export interface PlatformSliceState {
   revenueSeries: RevenuePoint[];
   invoices: PlatformInvoice[];
   refunds: RefundRequest[];
-  reconciliations: ReconciliationItem[];
 
-  aiProviders: AiProviderRecord[];
   aiModels: AiModelRecord[];
   aiRouting: AiRoutingPolicy;
   tryOnJobs: TryOnJobRecord[];
   creditLedger: CreditLedgerEntry[];
 
   modProducts: ModerationProductItem[];
-  modBrands: ModerationBrandItem[];
-  categories: MarketplaceCategory[];
-  collections: MarketplaceCollection[];
-  mktReports: MarketplaceReportItem[];
 
   cmsPages: CmsPageRecord[];
   tickets: SupportTicketRecord[];
-  alerts: PlatformAlert[];
-  securityEvents: SecurityEventRecord[];
   auditEvents: AuditEventRecord[];
   dataRequests: DataGovernanceRequest[];
   featureFlags: FeatureFlagRecord[];
@@ -100,9 +69,6 @@ export interface PlatformSliceState {
 }
 
 export const PERSISTED_PLATFORM_KEYS = [
-  'activeRole',
-  'roleOverrides',
-  'customRoles',
   'sidebarCollapsed',
   'openGroups',
   'settings',
@@ -118,10 +84,8 @@ const initialState: PlatformSliceState = {
   backendLatencyMs: null,
   backendTelemetry: { overview: null, aiMetrics: null },
 
-  activeRole: 'SUPER_ADMIN',
+  rbac: EMPTY_RBAC,
   adminEmail: '',
-  roleOverrides: {},
-  customRoles: [],
 
   sidebarCollapsed: false,
   openGroups: ['overview', 'tenants', 'ai', 'marketplace', 'system', 'security'],
@@ -135,29 +99,21 @@ const initialState: PlatformSliceState = {
   revenueSeries: [],
   invoices: [],
   refunds: [],
-  reconciliations: DEMO_RECONCILIATIONS,
 
-  aiProviders: DEMO_AI_PROVIDERS,
   aiModels: [],
-  aiRouting: DEMO_AI_ROUTING,
+  aiRouting: DEFAULT_AI_ROUTING,
   tryOnJobs: [],
   creditLedger: [],
 
   modProducts: [],
-  modBrands: DEMO_MOD_BRANDS,
-  categories: DEMO_CATEGORIES,
-  collections: DEMO_COLLECTIONS,
-  mktReports: DEMO_MKT_REPORTS,
 
   cmsPages: [],
   tickets: [],
-  alerts: DEMO_ALERTS,
-  securityEvents: DEMO_SECURITY_EVENTS,
   auditEvents: [],
   dataRequests: [],
   featureFlags: [],
   webhooks: [],
-  settings: DEMO_PLATFORM_SETTINGS,
+  settings: DEFAULT_PLATFORM_SETTINGS,
 };
 
 function appendPlatformAudit(
@@ -173,7 +129,7 @@ function appendPlatformAudit(
       id: `AUD-${Date.now().toString().slice(-5)}`,
       action,
       actor: state.adminEmail,
-      actorRole: state.activeRole,
+      actorRole: state.rbac.role || 'ADMIN',
       target,
       tenantContext,
       details,
@@ -234,7 +190,6 @@ export const platformSlice = createSlice({
           country: '—',
           group: 'NEW_COHORT',
           verificationStatus: 'UNVERIFIED',
-          subscriptionStatus: r.subscription?.status || 'ACTIVE',
           teamCount: 0,
           marketplacePublishedCount: Number(r.marketplacePublishedCount ?? 0),
           monthlySpend: 0,
@@ -245,6 +200,7 @@ export const platformSlice = createSlice({
           internalNotes: [],
           timeline: [],
           ...(prev || {}),
+          subscriptionStatus: r.subscription?.status || prev?.subscriptionStatus || 'ACTIVE',
           id: r.id,
           name: r.name,
           slug: r.slug,
@@ -315,41 +271,42 @@ export const platformSlice = createSlice({
       Object.assign(state, mapped);
     },
 
+    setTenantAdminContext: (
+      state,
+      action: PayloadAction<{
+        tenantId: string;
+        notes: Array<{ id: string; note: string; author: string; createdAt: string }>;
+        assignedSupportAgent: { id: string; name: string } | null;
+      }>
+    ) => {
+      const { tenantId, notes, assignedSupportAgent } = action.payload;
+      state.tenants = state.tenants.map((t) =>
+        t.id === tenantId
+          ? {
+              ...t,
+              assignedSupportAgent: assignedSupportAgent?.name,
+              internalNotes: notes.map((n) => ({
+                id: n.id,
+                author: n.author,
+                note: n.note,
+                at: new Date(n.createdAt).toLocaleString('en-US'),
+              })),
+            }
+          : t
+      );
+    },
+
+    setRbac: (
+      state,
+      action: PayloadAction<{ role: string; roleCodes: string[]; permissions: string[] }>
+    ) => {
+      state.rbac = { loaded: true, ...action.payload };
+    },
+
     setAdminEmail: (state, action: PayloadAction<string>) => {
       state.adminEmail = action.payload;
     },
 
-    setActiveRole: (state, action: PayloadAction<PlatformRole>) => {
-      state.activeRole = action.payload;
-    },
-    toggleRolePermission: (
-      state,
-      action: PayloadAction<{ role: PlatformRole; mod: PlatformModule; permAction: PlatformAction }>
-    ) => {
-      const { role, mod, permAction } = action.payload;
-      const cur = state.roleOverrides[role]?.[mod] || DEFAULT_ADMIN_PERMISSIONS[role]?.[mod] || [];
-      const next = cur.includes(permAction)
-        ? cur.filter((a) => a !== permAction)
-        : [...cur, permAction];
-      state.roleOverrides = {
-        ...state.roleOverrides,
-        [role]: { ...(state.roleOverrides[role] || {}), [mod]: next },
-      };
-      appendPlatformAudit(
-        state,
-        'RBAC_PERMISSION_UPDATED',
-        `${role}:${mod}`,
-        `Toggled permission action: ${permAction}`
-      );
-    },
-    createCustomRole: (
-      state,
-      action: PayloadAction<{ id: string; label: string; summary: string; mfaRequired: boolean }>
-    ) => {
-      const role = action.payload;
-      state.customRoles.push(role);
-      appendPlatformAudit(state, 'CUSTOM_ROLE_CREATED', role.id, `Added role ${role.label}`);
-    },
     toggleSidebarCollapsed: (state) => {
       state.sidebarCollapsed = !state.sidebarCollapsed;
     },
@@ -423,32 +380,6 @@ export const platformSlice = createSlice({
         id
       );
     },
-    addTenantNote: (state, action: PayloadAction<{ tenantId: string; note: string }>) => {
-      const { tenantId, note } = action.payload;
-      state.tenants = state.tenants.map((t) =>
-        t.id === tenantId
-          ? {
-              ...t,
-              internalNotes: [
-                {
-                  id: `n_${Date.now()}`,
-                  author: state.adminEmail,
-                  note,
-                  at: new Date().toLocaleString('en-US'),
-                },
-                ...t.internalNotes,
-              ],
-            }
-          : t
-      );
-    },
-    assignSupportAgent: (state, action: PayloadAction<{ tenantId: string; agent: string }>) => {
-      const { tenantId, agent } = action.payload;
-      state.tenants = state.tenants.map((t) =>
-        t.id === tenantId ? { ...t, assignedSupportAgent: agent } : t
-      );
-      appendPlatformAudit(state, 'SUPPORT_AGENT_ASSIGNED', tenantId, `Assigned ${agent}`, tenantId);
-    },
     startImpersonation: (
       state,
       action: PayloadAction<{
@@ -508,32 +439,6 @@ export const platformSlice = createSlice({
       appendPlatformAudit(state, 'USER_SESSIONS_REVOKED', id, 'Invalidated active JWT/refresh sessions');
     },
 
-    savePlan: (state, action: PayloadAction<SubscriptionPlanRecord>) => {
-      const plan = action.payload;
-      const exists = state.plans.some((p) => p.id === plan.id);
-      state.plans = exists ? state.plans.map((p) => (p.id === plan.id ? plan : p)) : [...state.plans, plan];
-      appendPlatformAudit(
-        state,
-        'PLAN_CONFIG_SAVED',
-        plan.name,
-        `Saved entitlement matrix (৳${plan.monthlyPrice} BDT/mo)`
-      );
-    },
-    updateSubscriptionStatus: (
-      state,
-      action: PayloadAction<{
-        id: string;
-        status: TenantSubscriptionRecord['status'];
-        extra?: Partial<TenantSubscriptionRecord>;
-      }>
-    ) => {
-      const { id, status, extra } = action.payload;
-      state.subscriptions = state.subscriptions.map((sub) =>
-        sub.id === id ? { ...sub, status, ...(extra || {}) } : sub
-      );
-      appendPlatformAudit(state, 'SUBSCRIPTION_MODIFIED', id, `Updated subscription -> ${status}`);
-    },
-
     updateRefundStatus: (
       state,
       action: PayloadAction<{ id: string; status: RefundRequest['status'] }>
@@ -544,17 +449,6 @@ export const platformSlice = createSlice({
       );
       appendPlatformAudit(state, 'REFUND_STATUS_UPDATED', id, `Refund status -> ${status}`);
     },
-    updateReconciliationStatus: (
-      state,
-      action: PayloadAction<{ id: string; status: ReconciliationItem['status'] }>
-    ) => {
-      const { id, status } = action.payload;
-      state.reconciliations = state.reconciliations.map((rec) =>
-        rec.id === id ? { ...rec, status } : rec
-      );
-      appendPlatformAudit(state, 'RECONCILIATION_UPDATED', id, `Exception status -> ${status}`);
-    },
-
     toggleAiModel: (
       state,
       action: PayloadAction<{ id: string; active?: boolean; isDefault?: boolean }>
@@ -655,34 +549,6 @@ export const platformSlice = createSlice({
       );
       appendPlatformAudit(state, 'PRODUCT_MODERATED', id, `Moderation -> ${moderationStatus}`);
     },
-    moderateBrand: (
-      state,
-      action: PayloadAction<{ id: string; updates: Partial<ModerationBrandItem> }>
-    ) => {
-      const { id, updates } = action.payload;
-      state.modBrands = state.modBrands.map((b) => (b.id === id ? { ...b, ...updates } : b));
-      appendPlatformAudit(state, 'BRAND_MODERATED', id, `Updated ${Object.keys(updates).join(', ')}`);
-    },
-    saveCategory: (state, action: PayloadAction<MarketplaceCategory>) => {
-      const cat = action.payload;
-      state.categories = state.categories.some((c) => c.id === cat.id)
-        ? state.categories.map((c) => (c.id === cat.id ? cat : c))
-        : [...state.categories, cat];
-    },
-    saveCollection: (state, action: PayloadAction<MarketplaceCollection>) => {
-      const col = action.payload;
-      state.collections = state.collections.some((c) => c.id === col.id)
-        ? state.collections.map((c) => (c.id === col.id ? col : c))
-        : [...state.collections, col];
-    },
-    resolveMktReport: (
-      state,
-      action: PayloadAction<{ id: string; status: MarketplaceReportItem['status'] }>
-    ) => {
-      const { id, status } = action.payload;
-      state.mktReports = state.mktReports.map((r) => (r.id === id ? { ...r, status } : r));
-      appendPlatformAudit(state, 'MARKETPLACE_REPORT_UPDATED', id, `Report status -> ${status}`);
-    },
     saveCmsPage: (state, action: PayloadAction<CmsPageRecord>) => {
       const page = action.payload;
       state.cmsPages = state.cmsPages.some((p) => p.id === page.id)
@@ -714,7 +580,7 @@ export const platformSlice = createSlice({
                 ...t.messages,
                 {
                   sender: state.adminEmail,
-                  role: state.activeRole,
+                  role: state.rbac.role || 'ADMIN',
                   text,
                   internal,
                   at: new Date().toLocaleString('en-US'),
@@ -724,26 +590,6 @@ export const platformSlice = createSlice({
             }
           : t
       );
-    },
-    updateAlertStatus: (
-      state,
-      action: PayloadAction<{ id: string; status: PlatformAlert['status']; owner?: string }>
-    ) => {
-      const { id, status, owner } = action.payload;
-      state.alerts = state.alerts.map((a) =>
-        a.id === id ? { ...a, status, owner: owner ?? a.owner } : a
-      );
-      appendPlatformAudit(state, 'PLATFORM_ALERT_UPDATED', id, `Status -> ${status}`);
-    },
-    updateSecurityEvent: (
-      state,
-      action: PayloadAction<{ id: string; status: SecurityEventRecord['status'] }>
-    ) => {
-      const { id, status } = action.payload;
-      state.securityEvents = state.securityEvents.map((e) =>
-        e.id === id ? { ...e, status } : e
-      );
-      appendPlatformAudit(state, 'SECURITY_EVENT_TRIAGED', id, `Status -> ${status}`);
     },
     updateDataRequest: (
       state,
@@ -780,17 +626,6 @@ export const platformSlice = createSlice({
         ...state.webhooks,
       ];
       appendPlatformAudit(state, 'WEBHOOK_REGISTERED', url, `Events: ${events.join(', ')}`);
-    },
-    retryWebhook: (state, action: PayloadAction<string>) => {
-      state.webhooks = state.webhooks.map((w) =>
-        w.id === action.payload
-          ? {
-              ...w,
-              retryCount: w.retryCount + 1,
-              lastAttemptAt: `${new Date().toLocaleTimeString('en-US')} (queued)`,
-            }
-          : w
-      );
     },
     updateSettings: (state, action: PayloadAction<Partial<PlatformGlobalSettings>>) => {
       state.settings = { ...state.settings, ...action.payload };

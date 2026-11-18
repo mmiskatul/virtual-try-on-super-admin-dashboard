@@ -2,19 +2,6 @@
 
 export type AdminTab = 'overview' | 'tenants' | 'ai' | 'infrastructure' | 'subscriptions' | 'audit';
 
-export type PlatformRole =
-  | 'SUPER_ADMIN'
-  | 'PLATFORM_OWNER'
-  | 'OPERATIONS_MANAGER'
-  | 'FINANCE_MANAGER'
-  | 'SUPPORT_MANAGER'
-  | 'SUPPORT_AGENT'
-  | 'MARKETPLACE_MODERATOR'
-  | 'AI_OPS_ENGINEER'
-  | 'SECURITY_ADMIN'
-  | 'ANALYST'
-  | string;
-
 export type PlatformAction =
   | 'view'
   | 'create'
@@ -224,31 +211,6 @@ export interface RefundRequest {
   createdAt: string;
 }
 
-export interface ReconciliationItem {
-  id: string;
-  provider: 'STRIPE' | 'SSLCOMMERZ';
-  providerEventId: string;
-  type: 'MISMATCHED_AMOUNT' | 'MISSING_INTERNAL_RECORD' | 'DUPLICATE_EVENT' | 'WEBHOOK_FAILURE';
-  expectedAmount: number;
-  providerAmount: number;
-  status: 'OPEN' | 'INVESTIGATING' | 'ACKNOWLEDGED' | 'RESOLVED';
-  detectedAt: string;
-  notes: string;
-}
-
-export interface AiProviderRecord {
-  id: string;
-  name: string;
-  category: 'CLOUD_API' | 'SELF_HOSTED_GPU';
-  enabled: boolean;
-  status: 'HEALTHY' | 'DEGRADED' | 'KEY_REQUIRED' | 'OFFLINE';
-  avgLatencyMs: number;
-  errorRatePct: number;
-  estimatedCostPerRunUsd: number;
-  models: string[];
-  lastCheckedAt: string;
-}
-
 export interface AiModelRecord {
   id: string;
   name: string;
@@ -331,46 +293,6 @@ export interface ModerationProductItem {
   submittedAt: string;
 }
 
-export interface ModerationBrandItem {
-  id: string;
-  tenantId: string;
-  brandName: string;
-  verificationStatus: 'VERIFIED' | 'PENDING_REVIEW' | 'RESTRICTED';
-  reportsCount: number;
-  marketplaceStatus: 'ALLOWED' | 'RESTRICTED';
-  reviewerNote: string;
-}
-
-export interface MarketplaceCategory {
-  id: string;
-  name: string;
-  slug: string;
-  order: number;
-  active: boolean;
-  productCount: number;
-  seoTitle: string;
-}
-
-export interface MarketplaceCollection {
-  id: string;
-  title: string;
-  slug: string;
-  description: string;
-  active: boolean;
-  sponsored: boolean;
-  itemCount: number;
-}
-
-export interface MarketplaceReportItem {
-  id: string;
-  targetType: 'PRODUCT' | 'BRAND';
-  targetName: string;
-  reason: 'COPYRIGHT' | 'INAPPROPRIATE_IMAGE' | 'MISLEADING_DESCRIPTION' | 'POLICY_VIOLATION';
-  reporter: string;
-  status: 'OPEN' | 'INVESTIGATING' | 'RESOLVED' | 'DISMISSED';
-  createdAt: string;
-}
-
 export interface CmsPageRecord {
   id: string;
   title: string;
@@ -398,28 +320,6 @@ export interface SupportTicketRecord {
   messages: Array<{ sender: string; role: string; text: string; internal?: boolean; at: string }>;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface PlatformAlert {
-  id: string;
-  severity: 'CRITICAL' | 'WARNING' | 'INFO';
-  category: 'PAYMENT' | 'AI_QUEUE' | 'USAGE_LIMIT' | 'STORAGE' | 'SECURITY' | 'BACKUP';
-  title: string;
-  details: string;
-  owner?: string;
-  status: 'OPEN' | 'INVESTIGATING' | 'RESOLVED';
-  createdAt: string;
-}
-
-export interface SecurityEventRecord {
-  id: string;
-  type: 'FAILED_LOGIN' | 'PRIVILEGE_ATTEMPT' | 'CROSS_TENANT_BLOCKED' | 'API_ABUSE' | 'MFA_FAILURE' | 'IMPERSONATION_START';
-  severity: 'HIGH' | 'MEDIUM' | 'LOW';
-  actor: string;
-  ipMasked: string;
-  details: string;
-  status: 'OPEN' | 'ACKNOWLEDGED' | 'DISMISSED';
-  timestamp: string;
 }
 
 export interface AuditLog {

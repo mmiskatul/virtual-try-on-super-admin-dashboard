@@ -6,6 +6,7 @@ import {
   platformActions,
 } from '../slices/platformSlice';
 import { superAdminApi } from '../../lib/api';
+import { reportSettingsSaveFailure } from '../../services/platformWrites';
 
 export const PLATFORM_STORAGE_KEY = 'vton_super_admin_v2';
 
@@ -59,7 +60,7 @@ platformPersistenceMiddleware.startListening({
   effect: (action, listenerApi) => {
     const platform = (listenerApi.getState() as { platform: PlatformSliceState }).platform;
     if (platform.isLiveBackend) {
-      void superAdminApi.updateSettings(action.payload).catch(() => undefined);
+      void superAdminApi.updateSettings(action.payload).catch((err) => reportSettingsSaveFailure(err));
     }
   },
 });
