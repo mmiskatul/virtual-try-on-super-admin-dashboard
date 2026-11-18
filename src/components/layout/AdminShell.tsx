@@ -205,7 +205,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen flex bg-slate-50 text-slate-900">
+    <div className="min-h-screen lg:h-screen lg:overflow-hidden flex bg-slate-50 text-slate-900">
       <ToastNotification message={toastMessage} />
 
       {mobileOpen && (
@@ -217,7 +217,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
       {/* Deep Navy / Charcoal Enterprise Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-slate-950 text-slate-200 border-r border-slate-800 transition-all duration-200 lg:static ${
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-slate-950 text-slate-200 border-r border-slate-800 transition-all duration-200 lg:static lg:h-full ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         } ${sidebarCollapsed ? 'w-[272px] lg:w-[72px]' : 'w-[272px]'} shrink-0`}
       >
@@ -371,7 +371,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 lg:h-screen lg:overflow-y-auto">
         {/* Controlled Support View-As Banner (Section 6E) */}
         {mounted && impersonation?.active && (
           <div className="bg-amber-600 text-white px-4 py-2 text-xs flex flex-wrap items-center justify-between gap-2">
