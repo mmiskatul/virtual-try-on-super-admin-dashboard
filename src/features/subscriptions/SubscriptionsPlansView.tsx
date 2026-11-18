@@ -14,7 +14,7 @@ import { usePlatformStore } from '../../stores/usePlatformStore';
 import { useAdminUiStore } from '../../stores/useAdminUiStore';
 import { useMounted } from '../../hooks/useMounted';
 import { platformService } from '../../services/platformService';
-import { PlanEntitlement, SubscriptionPlanRecord } from '../../types';
+import { PlanEntitlement } from '../../types';
 import {
   AdminPageHeader,
   AdminPermissionGate,
@@ -25,9 +25,9 @@ import {
   StatusPill,
 } from '../../components/shared/AdminUi';
 import { Button } from '../../components/ui/button';
-import { canAdminPerform } from '../../config/permissions';
+import { usePermissions } from '../../hooks/usePermissions';
 
-export type SubscriptionsTab = 'subscriptions' | 'plans' | 'create-plan' | 'trials' | 'history';
+export type SubscriptionsTab = 'subscriptions' | 'plans' | 'trials' | 'history';
 
 const ENTITLEMENT_KEYS: Array<{ key: keyof PlanEntitlement; label: string }> = [
   { key: 'marketplaceEnabled', label: 'Global Marketplace Access' },
@@ -43,51 +43,24 @@ const ENTITLEMENT_KEYS: Array<{ key: keyof PlanEntitlement; label: string }> = [
 export function SubscriptionsPlansView({
   initialTab = 'subscriptions',
   subscriptionId,
-  planId,
 }: {
   initialTab?: SubscriptionsTab;
   subscriptionId?: string;
-  planId?: string;
 }) {
   const mounted = useMounted();
   const isLiveBackend = usePlatformStore((s) => s.isLiveBackend);
-  const activeRole = usePlatformStore((s) => s.activeRole);
-  const roleOverrides = usePlatformStore((s) => s.roleOverrides);
+  const { can } = usePermissions();
   const plans = usePlatformStore((s) => s.plans);
   const subscriptions = usePlatformStore((s) => s.subscriptions);
-  const savePlan = usePlatformStore((s) => s.savePlan);
-  const updateSubscriptionStatus = usePlatformStore((s) => s.updateSubscriptionStatus);
-  const updateTenantPlanLocal = usePlatformStore((s) => s.updateTenantPlanLocal);
+  const extendTrial = usePlatformStore((s) => s.extendTrial);
+  const cancelSubscription = usePlatformStore((s) => s.cancelSubscription);
   const showToast = useAdminUiStore((s) => s.showToast);
   const hideToast = useAdminUiStore((s) => s.hideToast);
 
-  const [tab, setTab] = useState<SubscriptionsTab>(planId ? 'create-plan' : initialTab);
-  const existingPlan = planId ? plans.find((p) => p.id === planId) : undefined;
-
-  const [planName, setPlanName] = useState(existingPlan?.name || '');
-  const [planSlug, setPlanSlug] = useState(existingPlan?.slug || '');
-  const [planDesc, setPlanDesc] = useState(existingPlan?.description || '');
-  const [monthlyPrice, setMonthlyPrice] = useState(String(existingPlan?.monthlyPrice ?? 129));
-  const [annualPrice, setAnnualPrice] = useState(String(existingPlan?.annualPrice ?? 1290));
-  const [trialDays, setTrialDays] = useState(String(existingPlan?.trialDays ?? 14));
-  const [maxProducts, setMaxProducts] = useState(String(existingPlan?.limits.maxProducts ?? 1000));
-  const [monthlyCredits, setMonthlyCredits] = useState(String(existingPlan?.limits.monthlyAiCredits ?? 5000));
-  const [maxSeats, setMaxSeats] = useState(String(existingPlan?.limits.maxTeamSeats ?? 10));
-  const [entitlements, setEntitlements] = useState<PlanEntitlement>(
-    existingPlan?.entitlements || {
-      marketplaceEnabled: 'ENABLED',
-      virtualTryOnEnabled: 'ENABLED',
-      customDomainEnabled: 'ENABLED',
-      storefrontBuilder: 'ENABLED',
-      analyticsAccess: 'ENABLED',
-      apiAccess: 'ENABLED',
-      priorityGpuQueue: 'DISABLED',
-      highFidelityModels: 'ENABLED',
-    }
-  );
+  const [tab, setTab] = useState<SubscriptionsTab>(initialTab);
   const [confirmSubCancel, setConfirmSubCancel] = useState<string | null>(null);
 
-  const canConfigure = canAdminPerform(activeRole, 'subscriptions', 'configure', roleOverrides);
+  const canConfigure = can('subscriptions', 'configure');
   const safeSubs = mounted ? subscriptions : [];
   const safePlans = mounted ? plans : [];
 
@@ -118,30 +91,18 @@ export function SubscriptionsPlansView({
                 <div><span className="text-slate-400">Amount</span><p className="font-bold">৳{sub.amount} {sub.currency}/{sub.interval.toLowerCase()}</p></div>
                 <div><span className="text-slate-400">Provider</span><p className="font-bold">{sub.paymentProvider}</p></div>
                 <div><span className="text-slate-400">Started</span><p>{sub.startedAt}</p></div>
-                <div><span className="text-slate-400">Next Renewal</span><p>{sub.renewalDate}</p></div>
+                <div><span className="text-slate-400">{sub.status === 'TRIALING' ? 'Trial Ends' : 'Next Renewal'}</span><p>{sub.status === 'TRIALING' ? sub.trialEndsAt || '—' : sub.renewalDate}</p></div>
               </div>
               <div className="flex flex-wrap gap-2 pt-4 border-t border-slate-100">
                 <Button
                   size="sm"
                   variant="outline"
-                  disabled={!canConfigure}
-                  onClick={() => {
-                    updateSubscriptionStatus(sub.id, 'TRIALING', { trialEndsAt: '2026-12-15' });
-                    notify('Extended trial window to 2026-12-15.');
+                  disabled={!canConfigure || sub.status === 'CANCELLED'}
+                  onClick={async () => {
+                    if (await extendTrial(sub.tenantId, 14)) notify('Trial extended by 14 days.');
                   }}
                 >
-                  Extend Trial +14d
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={!canConfigure}
-                  onClick={() => {
-                    updateSubscriptionStatus(sub.id, 'ACTIVE', { discountPercent: 20 });
-                    notify('Applied 20% retention discount.');
-                  }}
-                >
-                  Apply 20% Discount
+                  {sub.status === 'TRIALING' ? 'Extend Trial +14d' : 'Start 14-Day Trial'}
                 </Button>
                 <Button
                   size="sm"
@@ -157,15 +118,15 @@ export function SubscriptionsPlansView({
           <ConfirmActionDialog
             open={Boolean(confirmSubCancel)}
             title="Cancel Tenant Subscription?"
-            description="Marks subscription CANCELLED at period boundary and syncs payment gateway webhook policy."
+            description="Marks the subscription CANCELLED immediately. The reason is recorded in the audit log."
             requireReason
             confirmLabel="Confirm Cancellation"
-            onConfirm={() => {
-              if (confirmSubCancel) {
-                updateSubscriptionStatus(confirmSubCancel, 'CANCELLED');
+            onConfirm={async (reason) => {
+              const target = safeSubs.find((x) => x.id === confirmSubCancel);
+              setConfirmSubCancel(null);
+              if (target && (await cancelSubscription(target.tenantId, reason))) {
                 notify('Subscription marked CANCELLED.');
               }
-              setConfirmSubCancel(null);
             }}
             onCancel={() => setConfirmSubCancel(null)}
           />
@@ -196,7 +157,6 @@ export function SubscriptionsPlansView({
           {[
             ['subscriptions', 'All Subscriptions', '/admin/subscriptions'],
             ['plans', 'Entitlement Plans', '/admin/plans'],
-            ['create-plan', 'Plan Builder', '/admin/plans/create'],
             ['trials', 'Free Trials', '/admin/subscriptions/trials'],
             ['history', 'Billing History', '/admin/subscriptions/history'],
           ].map(([id, lbl, href]) => (
@@ -248,111 +208,9 @@ export function SubscriptionsPlansView({
                     </div>
                   ))}
                 </div>
-                <Link href={`/admin/plans/${p.id}`} className="block pt-2">
-                  <Button variant="outline" size="sm" className="w-full">Edit Plan & Entitlements</Button>
-                </Link>
               </SectionPanel>
             ))}
           </div>
-        )}
-
-        {tab === 'create-plan' && (
-          <SectionPanel title={existingPlan ? `Edit Entitlements — ${existingPlan.name}` : 'Create Entitlement Plan'}>
-            <form
-              className="space-y-4 text-xs"
-              onSubmit={(e) => {
-                e.preventDefault();
-                const cleanSlug = (planSlug || planName).toLowerCase().replace(/[^a-z0-9]+/g, '-');
-                const record: SubscriptionPlanRecord = {
-                  id: existingPlan?.id || `plan_${cleanSlug}_${Date.now()}`,
-                  name: planName.trim(),
-                  slug: cleanSlug,
-                  description: planDesc.trim() || 'Configured entitlement tier.',
-                  monthlyPrice: Number(monthlyPrice) || 0,
-                  annualPrice: Number(annualPrice) || 0,
-                  setupFee: existingPlan?.setupFee || 0,
-                  currency: 'BDT',
-                  trialDays: Number(trialDays) || 14,
-                  publicVisible: true,
-                  displayOrder: existingPlan?.displayOrder || safePlans.length + 1,
-                  limits: {
-                    maxProducts: Number(maxProducts) || 500,
-                    maxVariantsPerProduct: 100,
-                    maxCategories: 50,
-                    maxCollections: 30,
-                    monthlyAiCredits: Number(monthlyCredits) || 5000,
-                    maxTeamSeats: Number(maxSeats) || 10,
-                    storageQuotaMb: 10240,
-                    monthlyApiRequests: 150000,
-                  },
-                  allowedQualities: ['fast_preview', 'balanced', 'high_fidelity'],
-                  allowedCategories: ['tops', 'bottoms', 'dresses', 'outerwear'],
-                  entitlements,
-                };
-                savePlan(record);
-                notify(`Saved subscription plan "${record.name}" and its entitlement matrix.`);
-                setTab('plans');
-              }}
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <label className="space-y-1">
-                  <span className="font-semibold text-slate-700">Plan Name</span>
-                  <input required value={planName} onChange={(e) => setPlanName(e.target.value)} placeholder="e.g. Boutique Plus" className="w-full rounded-lg border border-slate-200 px-3 py-2" />
-                </label>
-                <label className="space-y-1">
-                  <span className="font-semibold text-slate-700">Monthly Price (৳)</span>
-                  <input type="number" min="0" value={monthlyPrice} onChange={(e) => setMonthlyPrice(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2" />
-                </label>
-                <label className="space-y-1">
-                  <span className="font-semibold text-slate-700">Annual Price (৳)</span>
-                  <input type="number" min="0" value={annualPrice} onChange={(e) => setAnnualPrice(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2" />
-                </label>
-                <label className="space-y-1">
-                  <span className="font-semibold text-slate-700">Monthly AI Credits</span>
-                  <input type="number" min="0" value={monthlyCredits} onChange={(e) => setMonthlyCredits(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2" />
-                </label>
-                <label className="space-y-1">
-                  <span className="font-semibold text-slate-700">Max Products</span>
-                  <input type="number" min="1" value={maxProducts} onChange={(e) => setMaxProducts(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2" />
-                </label>
-                <label className="space-y-1">
-                  <span className="font-semibold text-slate-700">Trial Duration (Days)</span>
-                  <input type="number" min="0" value={trialDays} onChange={(e) => setTrialDays(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2" />
-                </label>
-              </div>
-
-              <div className="pt-2 border-t border-slate-100">
-                <p className="font-bold text-slate-900 mb-2">Structured Feature Entitlements</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {ENTITLEMENT_KEYS.map((ek) => (
-                    <label key={ek.key} className="p-2.5 rounded-lg border border-slate-200 space-y-1 block">
-                      <span className="font-semibold text-slate-700 block">{ek.label}</span>
-                      <select
-                        value={entitlements[ek.key]}
-                        onChange={(e) =>
-                          setEntitlements((prev) => ({
-                            ...prev,
-                            [ek.key]: e.target.value,
-                          }))
-                        }
-                        className="w-full rounded border border-slate-200 px-2 py-1 bg-white font-semibold"
-                      >
-                        <option value="ENABLED">ENABLED</option>
-                        {['marketplaceEnabled', 'virtualTryOnEnabled', 'storefrontBuilder', 'analyticsAccess'].includes(ek.key) && (
-                          <option value="LIMITED">LIMITED</option>
-                        )}
-                        <option value="DISABLED">DISABLED</option>
-                      </select>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <Button type="submit" disabled={!canConfigure} className="gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white">
-                <Plus className="w-3.5 h-3.5" /> Save Entitlement Plan
-              </Button>
-            </form>
-          </SectionPanel>
         )}
 
         {(tab === 'subscriptions' || tab === 'trials' || tab === 'history') && (
