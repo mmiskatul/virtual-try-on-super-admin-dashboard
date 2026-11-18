@@ -81,11 +81,34 @@ async function runSync(): Promise<boolean> {
   }
 }
 
-/** Runs a sync, or joins the one already running. */
-export function syncPlatformNow(): Promise<boolean> {
+/**
+ * The repeating refresh only re-pulls what changes while someone is looking at the dashboard (the control-plane
+ * snapshot and the tenant list): 2 requests instead of 11. The full sync (health probe, overview, audit logs, ...)
+ * runs on page load and when the Sync button is pressed. Keeping steady traffic low matters because Cloudflare
+ * rate-limits the API (error 1015) when too many calls arrive from one place.
+ * If both calls fail the backend may be down, so it falls back to the full sync, which also updates the status.
+ */
+async function runLightSync(): Promise<boolean> {
+  const store = usePlatformStore.getState();
+  const [tenants, snapshotRes] = await Promise.allSettled([
+    platformService.getTenants(),
+    platformService.getControlPlaneSnapshot(),
+  ]);
+  const tenantsOk = tenants.status === 'fulfilled' && Array.isArray(tenants.value);
+  const snapshotOk = snapshotRes.status === 'fulfilled' && Boolean(snapshotRes.value?.data);
+  if (!tenantsOk && !snapshotOk) return runSync();
+
+  if (tenantsOk) store.mergeLiveTenants((tenants as PromiseFulfilledResult<any[]>).value);
+  if (snapshotOk) store.hydrateControlPlaneSnapshot?.((snapshotRes as PromiseFulfilledResult<any>).value.data);
+  store.setLiveStatus(true, store.backendHealth, store.backendLatencyMs ?? undefined);
+  return true;
+}
+
+/** Runs a sync, or joins the one already running. `light` is for the repeating background refresh. */
+export function syncPlatformNow(options: { light?: boolean } = {}): Promise<boolean> {
   if (!inFlight) {
     lastSyncStartedAt = Date.now();
-    inFlight = runSync().finally(() => {
+    inFlight = (options.light ? runLightSync() : runSync()).finally(() => {
       inFlight = null;
     });
   }
@@ -105,11 +128,11 @@ export function usePlatformSync(options: { auto?: boolean } = {}) {
     void syncPlatformNow();
 
     const tick = () => {
-      if (document.visibilityState === 'visible') void syncPlatformNow();
+      if (document.visibilityState === 'visible') void syncPlatformNow({ light: true });
     };
     const onVisible = () => {
       if (document.visibilityState === 'visible' && Date.now() - lastSyncStartedAt >= AUTO_REFRESH_MS) {
-        void syncPlatformNow();
+        void syncPlatformNow({ light: true });
       }
     };
 
@@ -121,5 +144,6 @@ export function usePlatformSync(options: { auto?: boolean } = {}) {
     };
   }, [auto]);
 
-  return { syncNow: syncPlatformNow };
+  // Buttons call syncNow() with no arguments, which always runs the full sync.
+  return { syncNow: () => syncPlatformNow() };
 }
