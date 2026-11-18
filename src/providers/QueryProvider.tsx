@@ -44,7 +44,7 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
   return (
     <Provider store={store}>
       <ReduxPlatformHydrator />
-      <SessionProvider>
+      <SessionProvider refetchOnWindowFocus={false}>
         <SessionAdminEmailSync />
         <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
       </SessionProvider>
