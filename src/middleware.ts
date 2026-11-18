@@ -117,8 +117,12 @@ let lastCleanup = Date.now();
 
 function checkEdgeRateLimit(
   clientIp: string,
-  pathname: string
+  pathname: string,
+  exempt = false,
 ): { success: boolean; limit: number; remaining: number; reset: number } {
+  // Never throttle NextAuth session/csrf/_log polling, Next.js RSC prefetches, or local development:
+  // one page load fires many of these and they would exhaust the per-IP budget (HTTP 429).
+  if (exempt) return { success: true, limit: 0, remaining: 0, reset: 0 };
   const now = Date.now();
   if (now - lastCleanup > 300000) {
     lastCleanup = now;
@@ -189,7 +193,12 @@ export async function middleware(request: NextRequest) {
   }
 
   // 2. Edge-Level Sliding-Window Rate Limiting
-  const rateLimit = checkEdgeRateLimit(clientIp, pathname);
+  const exemptFromRateLimit =
+    process.env.NODE_ENV !== 'production' ||
+    request.nextUrl.searchParams.has('_rsc') ||
+    request.headers.has('next-router-prefetch') ||
+    /^[/]api[/]auth[/](session|csrf|providers|_log)([/]|$)/.test(pathname);
+  const rateLimit = checkEdgeRateLimit(clientIp, pathname, exemptFromRateLimit);
   if (!rateLimit.success) {
     return NextResponse.json(
       {
@@ -230,9 +239,11 @@ export async function middleware(request: NextRequest) {
     if (includeGovernanceTag) {
       res.headers.set('x-governance-layer', 'edge-v8-enforced');
     }
-    res.headers.set('X-RateLimit-Limit', String(rateLimit.limit));
-    res.headers.set('X-RateLimit-Remaining', String(rateLimit.remaining));
-    res.headers.set('X-RateLimit-Reset', String(rateLimit.reset));
+    if (rateLimit.limit > 0) {
+      res.headers.set('X-RateLimit-Limit', String(rateLimit.limit));
+      res.headers.set('X-RateLimit-Remaining', String(rateLimit.remaining));
+      res.headers.set('X-RateLimit-Reset', String(rateLimit.reset));
+    }
     if (origin && isOriginAllowed(origin)) {
       res.headers.set('Access-Control-Allow-Origin', origin);
       res.headers.set('Access-Control-Allow-Credentials', 'true');
