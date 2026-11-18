@@ -6,7 +6,7 @@ import { Lock, ArrowLeft, ExternalLink } from 'lucide-react';
 import { AuthShell } from '../../components/auth/AuthShell';
 
 export default function AdminRegisterRestrictedPage() {
-  const brandPortalUrl = process.env.NEXT_PUBLIC_BRAND_PORTAL_URL || 'http://localhost:3001/register';
+  const brandPortalUrl = process.env.NEXT_PUBLIC_BRAND_PORTAL_URL || (process.env.NODE_ENV === 'production' ? 'https://shop.brand.vtrystudio.com/register' : 'http://localhost:3001/register');
 
   return (
     <AuthShell
