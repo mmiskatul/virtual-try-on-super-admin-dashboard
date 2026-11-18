@@ -67,7 +67,7 @@ const SAMPLE_BRAND_SEED: Array<{
   { name: 'Sandbox Apparel Dev', slug: 'sandbox-dev', owner: 'Platform QA', country: 'United States', plan: 'FREE', lifecycle: 'RESTRICTED', group: 'SANDBOX', gmv: 0, used: 120, quota: 150 },
 ];
 
-export const DEMO_TENANTS: TenantRecord[] = SAMPLE_BRAND_SEED.map((b, i) => {
+const DEMO_TENANTS: TenantRecord[] = SAMPLE_BRAND_SEED.map((b, i) => {
   const num = i + 1;
   const suspended = b.lifecycle === 'SUSPENDED' || b.lifecycle === 'CANCELLED';
   return {
@@ -124,66 +124,6 @@ export const DEMO_TENANTS: TenantRecord[] = SAMPLE_BRAND_SEED.map((b, i) => {
       { label: `Provisioned ${b.plan} plan entitlements`, at: '2026-10-02', category: 'BILLING' },
       { label: `Latest virtual try-on & storefront sync`, at: '2026-11-10', category: 'ACTIVITY' },
     ],
-  };
-});
-
-// 100 Deterministic Sample Platform Users across all 5 categories
-export const DEMO_PLATFORM_USERS: PlatformUserRecord[] = Array.from({ length: 100 }).map((_, idx) => {
-  const categories: PlatformUserRecord['category'][] = [
-    'MARKETPLACE_CUSTOMER',
-    'BRAND_OWNER',
-    'BRAND_STAFF',
-    'PLATFORM_STAFF',
-    'SUPER_ADMIN',
-  ];
-  const cat =
-    idx < 2
-      ? 'SUPER_ADMIN'
-      : idx < 10
-      ? 'PLATFORM_STAFF'
-      : idx < 35
-      ? 'BRAND_OWNER'
-      : idx < 55
-      ? 'BRAND_STAFF'
-      : 'MARKETPLACE_CUSTOMER';
-  const tenant = DEMO_TENANTS[idx % DEMO_TENANTS.length];
-  const roles = ['Operations Manager', 'Finance Manager', 'Support Agent', 'AI Ops Engineer', 'Marketplace Moderator'];
-  return {
-    id: `usr_${String(idx + 1).padStart(3, '0')}`,
-    name:
-      cat === 'SUPER_ADMIN'
-        ? `Platform Root ${idx + 1}`
-        : cat === 'PLATFORM_STAFF'
-        ? `Staff Operator ${idx + 1}`
-        : cat === 'BRAND_OWNER'
-        ? tenant.owner
-        : `User Member ${idx + 1}`,
-    email:
-      cat === 'SUPER_ADMIN'
-        ? `root${idx + 1}@vton-platform.io`
-        : cat === 'PLATFORM_STAFF'
-        ? `staff${idx + 1}@vton-platform.io`
-        : cat === 'BRAND_OWNER'
-        ? tenant.email
-        : `member${idx + 1}@shopper-mail.example`,
-    category: cat,
-    tenantId: cat === 'BRAND_OWNER' || cat === 'BRAND_STAFF' ? tenant.id : undefined,
-    tenantName: cat === 'BRAND_OWNER' || cat === 'BRAND_STAFF' ? tenant.name : 'Global Platform',
-    roleLabel:
-      cat === 'SUPER_ADMIN'
-        ? 'SUPER_ADMIN'
-        : cat === 'PLATFORM_STAFF'
-        ? roles[idx % roles.length]
-        : cat === 'BRAND_OWNER'
-        ? 'OWNER'
-        : cat === 'BRAND_STAFF'
-        ? 'PRODUCT_MANAGER'
-        : 'CUSTOMER',
-    status: idx % 19 === 0 ? 'SUSPENDED' : idx % 17 === 0 ? 'PENDING_VERIFICATION' : 'ACTIVE',
-    mfaEnabled: cat === 'SUPER_ADMIN' || cat === 'PLATFORM_STAFF' || idx % 3 === 0,
-    registeredAt: `2026-10-${String((idx % 28) + 1).padStart(2, '0')}`,
-    lastLoginAt: idx % 4 === 0 ? '2026-11-11 09:15' : '2026-11-10 16:40',
-    activeSessionsCount: idx % 19 === 0 ? 0 : (idx % 3) + 1,
   };
 });
 
@@ -436,27 +376,6 @@ export const DEMO_AI_ROUTING: AiRoutingPolicy = {
   },
 };
 
-export const DEMO_TRYON_JOBS: TryOnJobRecord[] = [
-  { id: 'job_88204', tenantId: 'tenant_aura', tenantName: 'Aura Atelier', productId: 'prod_1', productName: 'Silk Evening Slip Dress', modelId: 'gemini-3.6-flash', provider: 'gemini', status: 'COMPLETED', durationMs: 1480, creditsConsumed: 1, estProviderCostUsd: 0.032, retryCount: 0, privateMediaRedacted: true, createdAt: '2026-11-11 11:22' },
-  { id: 'job_88203', tenantId: 'tenant_vogue', tenantName: 'Vogue Nova', productId: 'prod_9', productName: 'Double-Breasted Wool Coat', modelId: 'fal-flux-vto', provider: 'fal', status: 'PROCESSING', queuePosition: 1, durationMs: 920, creditsConsumed: 1, estProviderCostUsd: 0.045, retryCount: 0, privateMediaRedacted: true, createdAt: '2026-11-11 11:21' },
-  { id: 'job_88202', tenantId: 'tenant_003', tenantName: 'Aarong Heritage Studio', productId: 'prod_22', productName: 'Jamdani Embroidered Tunic', modelId: 'gemini-3.6-flash', provider: 'gemini', status: 'QUEUED', queuePosition: 2, durationMs: 0, creditsConsumed: 0, estProviderCostUsd: 0, retryCount: 0, privateMediaRedacted: true, createdAt: '2026-11-11 11:20' },
-  { id: 'job_88201', tenantId: 'tenant_014', tenantName: 'Monsoon Outerwear', productId: 'prod_41', productName: 'Waxed Canvas Trench', modelId: 'fal-flux-vto', provider: 'fal', status: 'FAILED', durationMs: 25010, creditsConsumed: 0, estProviderCostUsd: 0.012, retryCount: 2, failureCategory: 'PROVIDER_TIMEOUT', errorMessage: 'Upstream provider timed out after 25s window.', privateMediaRedacted: true, createdAt: '2026-11-11 10:58' },
-  { id: 'job_88200', tenantId: 'tenant_018', tenantName: 'Modest Vogue', productId: 'prod_55', productName: 'Pleated Crepe Abaya', modelId: 'viton-hd-unet-v2', provider: 'viton', status: 'FAILED', durationMs: 410, creditsConsumed: 0, estProviderCostUsd: 0.001, retryCount: 0, failureCategory: 'IMAGE_VALIDATION', errorMessage: 'Person photo aspect ratio failed garment framing validation.', privateMediaRedacted: true, createdAt: '2026-11-11 10:41' },
-];
-
-export const DEMO_CREDIT_LEDGER: CreditLedgerEntry[] = [
-  { id: 'crd_401', tenantId: 'tenant_vogue', tenantName: 'Vogue Nova', type: 'GRANT_PROMO', delta: 500, balanceAfter: 17080, reason: 'Enterprise partner seasonal onboarding bonus', actor: 'root1@vton-platform.io', referenceId: 'PROMO-NOV-26', createdAt: '2026-11-11 09:00' },
-  { id: 'crd_400', tenantId: 'tenant_aura', tenantName: 'Aura Atelier', type: 'CONSUMED', delta: -1, balanceAfter: 3760, reason: 'Try-On Job job_88204 completed', actor: 'system_metering', referenceId: 'job_88204', createdAt: '2026-11-11 11:22' },
-  { id: 'crd_399', tenantId: 'tenant_014', tenantName: 'Monsoon Outerwear', type: 'RELEASED', delta: 1, balanceAfter: 11, reason: 'Released credit reservation on timeout job_88201', actor: 'system_metering', referenceId: 'job_88201', createdAt: '2026-11-11 10:59' },
-];
-
-export const DEMO_MOD_PRODUCTS: ModerationProductItem[] = [
-  { id: 'mod_p1', productId: 'prod_1', productName: 'Midnight Mulberry Silk Slip', brandId: 'tenant_aura', brandName: 'Aura Atelier', category: 'Dresses', imageUrl: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400', price: 245, moderationStatus: 'APPROVED', visibility: 'PUBLIC', featured: true, reportsCount: 0, submittedAt: '2026-11-08' },
-  { id: 'mod_p2', productId: 'prod_12', productName: 'Monsoon Waterproof Trench', brandId: 'tenant_014', brandName: 'Monsoon Outerwear', category: 'Jackets', imageUrl: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400', price: 185, moderationStatus: 'PENDING_REVIEW', visibility: 'HIDDEN', featured: false, reportsCount: 2, submittedAt: '2026-11-10' },
-  { id: 'mod_p3', productId: 'prod_19', productName: 'Handwoven Jamdani Panjabi', brandId: 'tenant_003', brandName: 'Aarong Heritage Studio', category: 'Traditional Wear', imageUrl: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400', price: 120, moderationStatus: 'APPROVED', visibility: 'PUBLIC', featured: true, sponsored: true, reportsCount: 0, submittedAt: '2026-11-07' },
-  { id: 'mod_p4', productId: 'prod_27', productName: 'Oversized Fleece Hoodie', brandId: 'tenant_022', brandName: 'Urban Streetwear BD', category: 'Hoodies', imageUrl: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400', price: 68, moderationStatus: 'CHANGES_REQUESTED', visibility: 'HIDDEN', featured: false, reportsCount: 1, submittedAt: '2026-11-09' },
-];
-
 export const DEMO_MOD_BRANDS: ModerationBrandItem[] = [
   { id: 'mod_b1', tenantId: 'tenant_018', brandName: 'Modest Vogue', verificationStatus: 'PENDING_REVIEW', reportsCount: 0, marketplaceStatus: 'ALLOWED', reviewerNote: 'Awaiting trade license scan confirmation.' },
   { id: 'mod_b2', tenantId: 'tenant_014', brandName: 'Monsoon Outerwear', verificationStatus: 'VERIFIED', reportsCount: 3, marketplaceStatus: 'RESTRICTED', reviewerNote: '2 misleading sizing complaints under review.' },
@@ -480,13 +399,6 @@ export const DEMO_COLLECTIONS: MarketplaceCollection[] = [
 export const DEMO_MKT_REPORTS: MarketplaceReportItem[] = [
   { id: 'rep_501', targetType: 'PRODUCT', targetName: 'Monsoon Waterproof Trench', reason: 'MISLEADING_DESCRIPTION', reporter: 'shopper_192@example.com', status: 'OPEN', createdAt: '2026-11-10' },
   { id: 'rep_502', targetType: 'PRODUCT', targetName: 'Oversized Fleece Hoodie', reason: 'COPYRIGHT', reporter: 'legal@brand-watch.io', status: 'INVESTIGATING', createdAt: '2026-11-09' },
-];
-
-export const DEMO_CMS_PAGES: CmsPageRecord[] = [
-  { id: 'cms_1', title: 'Global Marketplace Hero Banner', slug: 'home-hero', type: 'HOMEPAGE_SECTION', status: 'PUBLISHED', order: 1, summary: 'Main holiday 2026 virtual fitting hero showcase.', updatedAt: '2026-11-10' },
-  { id: 'cms_2', title: 'Privacy & Customer Photo Consent Policy', slug: '/privacy', type: 'STATIC_PAGE', status: 'PUBLISHED', order: 2, summary: 'Explains temporary try-on image processing and customer erasure rights.', updatedAt: '2026-11-01' },
-  { id: 'cms_3', title: 'Winter Collection Promo Ribbon', slug: 'banner-winter', type: 'BANNER', status: 'SCHEDULED', order: 3, summary: 'Scheduled homepage strip for multi-brand winter sale.', updatedAt: '2026-11-11' },
-  { id: 'cms_4', title: 'How Brands Cut Return Rates by 28% with V-TRY', slug: '/blog/reduce-returns-vton', type: 'BLOG', status: 'PUBLISHED', order: 4, summary: 'Editorial merchant case study.', updatedAt: '2026-11-06' },
 ];
 
 export const DEMO_TICKETS: SupportTicketRecord[] = [
@@ -556,27 +468,9 @@ export const DEMO_SECURITY_EVENTS: SecurityEventRecord[] = [
   { id: 'sec_90', type: 'CROSS_TENANT_BLOCKED', severity: 'HIGH', actor: 'token:brand_014', ipMasked: '103.112.xxx.88', details: 'Blocked unauthorized cross-tenant PATCH /api/v1/products lookup.', status: 'ACKNOWLEDGED', timestamp: '2026-11-10 21:14' },
 ];
 
-export const DEMO_AUDIT_EVENTS: AuditEventRecord[] = [
-  { id: 'AUD-902', action: 'SYSTEM_BOOTSTRAP', actor: 'admin@vton-platform.io', actorRole: 'SUPER_ADMIN', target: 'PLATFORM_CORE', details: 'Fastify v5 core APIs & vton-ai-service worker mounted', timestamp: '2026-11-11 08:00', correlationId: 'corr_902a1' },
-  { id: 'AUD-901', action: 'AI_ROUTING_VERIFIED', actor: 'ai-ops@vton-platform.io', actorRole: 'AI_OPS_ENGINEER', target: 'gemini-3.6-flash', details: 'Validated fallback chain gemini -> fal -> viton-hd-unet-v2', timestamp: '2026-11-11 09:30', correlationId: 'corr_901b4' },
-  { id: 'AUD-899', action: 'MODERATION_APPROVED', actor: 'mod@vton-platform.io', actorRole: 'MARKETPLACE_MODERATOR', tenantContext: 'tenant_aura', target: 'Midnight Mulberry Silk Slip', details: 'Approved listing for global marketplace visibility', timestamp: '2026-11-10 16:40', correlationId: 'corr_899c2' },
-];
-
 export const DEMO_DATA_REQUESTS: DataGovernanceRequest[] = [
   { id: 'dgr_201', type: 'DATA_EXPORT', requester: 'Caspian Cashmere (Owner)', tenantName: 'Caspian Cashmere', status: 'COMPLETED', retentionDeadline: '2026-12-10', createdAt: '2026-11-05' },
   { id: 'dgr_202', type: 'PHOTO_PURGE', requester: 'shopper_418@example.com', tenantName: 'Aura Atelier', status: 'PENDING_REVIEW', retentionDeadline: '2026-11-13', createdAt: '2026-11-11' },
-];
-
-export const DEMO_FEATURE_FLAGS: FeatureFlagRecord[] = [
-  { key: 'marketplace_enabled', name: 'Global Marketplace Discovery', description: 'Enables cross-brand public discovery feed and search.', owner: 'Product Ops', globalEnabled: true, rolloutPct: 100, planOverrides: { FREE: false, STARTER: true, PRO: true, BUSINESS: true, ENTERPRISE: true }, updatedAt: '2026-11-01' },
-  { key: 'virtual_tryon_enabled', name: 'AI Virtual Try-On Pipeline', description: 'Enables garment virtual fitting across brand storefronts and marketplace.', owner: 'AI Engineering', globalEnabled: true, rolloutPct: 100, planOverrides: { FREE: true, STARTER: true, PRO: true, BUSINESS: true, ENTERPRISE: true }, updatedAt: '2026-11-05' },
-  { key: 'custom_domains_enabled', name: 'Merchant Custom Domains & TLS', description: 'Allows brands to map custom CNAME domains.', owner: 'Platform Infra', globalEnabled: true, rolloutPct: 100, planOverrides: { FREE: false, STARTER: true, PRO: true, BUSINESS: true, ENTERPRISE: true }, updatedAt: '2026-10-20' },
-  { key: 'high_res_vto_1024', name: '1024px HD Try-On Rendering', description: 'Gradual rollout of 1024x1366 resolution mode on Pro+ plans.', owner: 'AI Engineering', globalEnabled: true, rolloutPct: 50, planOverrides: { FREE: false, STARTER: false, PRO: true, BUSINESS: true, ENTERPRISE: true }, updatedAt: '2026-11-10' },
-];
-
-export const DEMO_WEBHOOKS: WebhookSubscription[] = [
-  { id: 'wh_p1', url: 'https://ops-alerts.vton-platform.io/hooks/billing', events: ['subscription.updated', 'payment.failed'], active: true, lastResponseCode: 200, retryCount: 0, lastAttemptAt: '2026-11-11 10:15' },
-  { id: 'wh_p2', url: 'https://bi-warehouse.internal.example/ingest', events: ['tryon.completed', 'tenant.created'], active: true, lastResponseCode: 502, retryCount: 2, lastAttemptAt: '2026-11-11 11:05' },
 ];
 
 export const DEMO_PLATFORM_SETTINGS: PlatformGlobalSettings = {

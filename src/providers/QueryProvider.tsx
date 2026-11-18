@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { SessionProvider } from 'next-auth/react';
+import { SessionProvider, useSession } from 'next-auth/react';
 import { Provider } from 'react-redux';
 import { store } from '../store';
 import { platformActions } from '../store/slices/platformSlice';
@@ -13,6 +13,16 @@ function ReduxPlatformHydrator() {
     store.dispatch(platformActions.hydratePlatform(readPersistedPlatformState()));
   }, []);
 
+  return null;
+}
+
+// Audit entries and notes are written as the signed-in admin, not a placeholder address.
+function SessionAdminEmailSync() {
+  const { data: session } = useSession();
+  const email = session?.user?.email || '';
+  useEffect(() => {
+    store.dispatch(platformActions.setAdminEmail(email));
+  }, [email]);
   return null;
 }
 
@@ -35,6 +45,7 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
     <Provider store={store}>
       <ReduxPlatformHydrator />
       <SessionProvider>
+        <SessionAdminEmailSync />
         <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
       </SessionProvider>
     </Provider>

@@ -73,7 +73,9 @@ export function AiOperationsView({
   const hideToast = useAdminUiStore((s) => s.hideToast);
 
   const [tab, setTab] = useState<AiOrTryOnTab>(initialTab);
-  const [creditTenantId, setCreditTenantId] = useState(tenants[0]?.id || 'tenant_aura');
+  const [pickedCreditTenantId, setCreditTenantId] = useState('');
+  // follow the first loaded tenant until the admin picks one
+  const creditTenantId = pickedCreditTenantId || tenants[0]?.id || '';
   const [creditDelta, setCreditDelta] = useState('500');
   const [creditType, setCreditType] = useState<'GRANT_PROMO' | 'ADMIN_ADJUSTMENT'>('GRANT_PROMO');
   const [creditReason, setCreditReason] = useState('');

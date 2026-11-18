@@ -1,6 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { AdminTab, AuditLog, TenantItem } from '../../types';
-import { INITIAL_AUDIT_LOGS, INITIAL_TENANTS } from '../../lib/mock_data';
+import { AdminTab } from '../../types';
 
 export interface AdminUiSliceState {
   activeTab: AdminTab;
@@ -23,51 +22,5 @@ export const adminUiSlice = createSlice({
   },
 });
 
-export interface TenantSliceState {
-  items: TenantItem[];
-}
-
-export const tenantSlice = createSlice({
-  name: 'tenant',
-  initialState: { items: INITIAL_TENANTS } as TenantSliceState,
-  reducers: {
-    setTenants: (state, action: PayloadAction<TenantItem[]>) => {
-      state.items = action.payload;
-    },
-    toggleTenantStatus: (state, action: PayloadAction<string>) => {
-      state.items = state.items.map((t) =>
-        t.id === action.payload
-          ? { ...t, status: t.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE' }
-          : t
-      );
-    },
-    updateQuota: (state, action: PayloadAction<{ tenantId: string; quota: number }>) => {
-      const { tenantId, quota } = action.payload;
-      state.items = state.items.map((t) =>
-        t.id === tenantId ? { ...t, tryOnQuota: quota } : t
-      );
-    },
-  },
-});
-
-export interface AuditSliceState {
-  logs: AuditLog[];
-}
-
-export const auditSlice = createSlice({
-  name: 'audit',
-  initialState: { logs: INITIAL_AUDIT_LOGS } as AuditSliceState,
-  reducers: {
-    setLogs: (state, action: PayloadAction<AuditLog[]>) => {
-      state.logs = action.payload;
-    },
-    addAuditLog: (state, action: PayloadAction<AuditLog>) => {
-      state.logs = [action.payload, ...state.logs];
-    },
-  },
-});
-
 export const adminUiActions = adminUiSlice.actions;
-export const tenantActions = tenantSlice.actions;
-export const auditActions = auditSlice.actions;
 

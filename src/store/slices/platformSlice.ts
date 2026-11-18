@@ -38,29 +38,20 @@ import {
   DEMO_AI_PROVIDERS,
   DEMO_AI_ROUTING,
   DEMO_ALERTS,
-  DEMO_AUDIT_EVENTS,
   DEMO_CATEGORIES,
-  DEMO_CMS_PAGES,
   DEMO_COLLECTIONS,
-  DEMO_CREDIT_LEDGER,
   DEMO_DATA_REQUESTS,
-  DEMO_FEATURE_FLAGS,
   DEMO_INVOICES,
   DEMO_MKT_REPORTS,
   DEMO_MOD_BRANDS,
-  DEMO_MOD_PRODUCTS,
   DEMO_PLATFORM_SETTINGS,
-  DEMO_PLATFORM_USERS,
   DEMO_PLANS,
   DEMO_RECONCILIATIONS,
   DEMO_REFUNDS,
   DEMO_SECURITY_EVENTS,
   DEMO_SUBSCRIPTIONS,
-  DEMO_TENANTS,
   DEMO_TICKETS,
   DEMO_TRANSACTIONS,
-  DEMO_TRYON_JOBS,
-  DEMO_WEBHOOKS,
 } from '../../data/platformDemoSeed';
 import { DEFAULT_ADMIN_PERMISSIONS } from '../../config/permissions';
 
@@ -120,7 +111,6 @@ export const PERSISTED_PLATFORM_KEYS = [
   'customRoles',
   'sidebarCollapsed',
   'openGroups',
-  'featureFlags',
   'settings',
 ] as const;
 
@@ -135,7 +125,7 @@ const initialState: PlatformSliceState = {
   backendTelemetry: { overview: null, aiMetrics: null },
 
   activeRole: 'SUPER_ADMIN',
-  adminEmail: 'admin@vton-platform.io',
+  adminEmail: '',
   roleOverrides: {},
   customRoles: [],
 
@@ -143,8 +133,8 @@ const initialState: PlatformSliceState = {
   openGroups: ['overview', 'tenants', 'ai', 'marketplace', 'system', 'security'],
   impersonation: null,
 
-  tenants: DEMO_TENANTS,
-  users: DEMO_PLATFORM_USERS,
+  tenants: [],
+  users: [],
   plans: DEMO_PLANS,
   subscriptions: DEMO_SUBSCRIPTIONS,
   transactions: DEMO_TRANSACTIONS,
@@ -155,23 +145,23 @@ const initialState: PlatformSliceState = {
   aiProviders: DEMO_AI_PROVIDERS,
   aiModels: DEMO_AI_MODELS,
   aiRouting: DEMO_AI_ROUTING,
-  tryOnJobs: DEMO_TRYON_JOBS,
-  creditLedger: DEMO_CREDIT_LEDGER,
+  tryOnJobs: [],
+  creditLedger: [],
 
-  modProducts: DEMO_MOD_PRODUCTS,
+  modProducts: [],
   modBrands: DEMO_MOD_BRANDS,
   categories: DEMO_CATEGORIES,
   collections: DEMO_COLLECTIONS,
   mktReports: DEMO_MKT_REPORTS,
 
-  cmsPages: DEMO_CMS_PAGES,
+  cmsPages: [],
   tickets: DEMO_TICKETS,
   alerts: DEMO_ALERTS,
   securityEvents: DEMO_SECURITY_EVENTS,
-  auditEvents: DEMO_AUDIT_EVENTS,
+  auditEvents: [],
   dataRequests: DEMO_DATA_REQUESTS,
-  featureFlags: DEMO_FEATURE_FLAGS,
-  webhooks: DEMO_WEBHOOKS,
+  featureFlags: [],
+  webhooks: [],
   settings: DEMO_PLATFORM_SETTINGS,
 };
 
@@ -229,41 +219,37 @@ export const platformSlice = createSlice({
     setBackendTelemetry: (state, action: PayloadAction<{ overview: any; aiMetrics: any }>) => {
       state.backendTelemetry = action.payload;
     },
+    // The backend is the source of truth: replace the list (an empty answer means no tenants). Local-only
+    // details (internal notes, timeline) are kept for tenants that were already loaded. Fields the backend does
+    // not provide (country, team size, storage, API usage) stay neutral instead of being invented.
     mergeLiveTenants: (state, action: PayloadAction<any[]>) => {
       const raw = action.payload;
-      if (!Array.isArray(raw) || raw.length === 0) return;
+      if (!Array.isArray(raw)) return;
       const existingMap = new Map(state.tenants.map((t) => [t.id, t]));
-      const mergedLive: TenantRecord[] = raw.map((r) => {
+      state.tenants = raw.map((r): TenantRecord => {
         const prev = existingMap.get(r.id);
         const plan = r.subscription?.plan || prev?.plan || 'STARTER';
         const statusUpper = String(r.status || 'ACTIVE').toUpperCase();
         return {
-          ...(prev || {
-            country: 'Bangladesh',
-            group: 'GROWTH_BOUTIQUE',
-            verificationStatus: 'VERIFIED',
-            subscriptionStatus: 'ACTIVE',
-            teamCount: 3,
-            marketplacePublishedCount: r.productCount || 0,
-            monthlySpend: plan === 'ENTERPRISE' ? 299 : plan === 'PRO' ? 99 : 39,
-            storageUsedMb: 240,
-            storageLimitMb: 10240,
-            apiRequests30d: 1850,
-            retentionGraceDays: 30,
-            internalNotes: [],
-            timeline: [
-              {
-                label: 'Live backend record synchronized',
-                at: new Date().toLocaleDateString('en-US'),
-                category: 'SYSTEM',
-              },
-            ],
-          }),
+          country: '—',
+          group: 'NEW_COHORT',
+          verificationStatus: 'UNVERIFIED',
+          subscriptionStatus: r.subscription?.status || 'ACTIVE',
+          teamCount: 0,
+          marketplacePublishedCount: Number(r.marketplacePublishedCount ?? 0),
+          monthlySpend: 0,
+          storageUsedMb: 0,
+          storageLimitMb: 0,
+          apiRequests30d: 0,
+          retentionGraceDays: 0,
+          internalNotes: [],
+          timeline: [],
+          ...(prev || {}),
           id: r.id,
           name: r.name,
           slug: r.slug,
           owner: r.owner || prev?.owner || r.name,
-          email: r.contactEmail || r.email || prev?.email || `${r.slug}@example.com`,
+          email: r.contactEmail || r.email || prev?.email || '',
           status: statusUpper === 'SUSPENDED' ? 'SUSPENDED' : 'ACTIVE',
           lifecycleStatus:
             statusUpper === 'SUSPENDED'
@@ -272,23 +258,18 @@ export const platformSlice = createSlice({
                 ? 'PENDING_VERIFICATION'
                 : 'ACTIVE',
           plan,
-          productsCount: Number(r.productCount ?? prev?.productsCount ?? 0),
-          ordersCount: Number(r.orderCount ?? prev?.ordersCount ?? 0),
-          gmv: Number(r.totalRevenue ?? prev?.gmv ?? 0),
-          tryOnUsed: Number(r.subscription?.tryOnUsed ?? prev?.tryOnUsed ?? 0),
-          tryOnQuota: Number(r.subscription?.tryOnMonthlyQuota ?? prev?.tryOnQuota ?? 500),
-          joinedDate: r.createdAt
-            ? new Date(r.createdAt).toISOString().slice(0, 10)
-            : prev?.joinedDate || '2026-10-01',
+          productsCount: Number(r.productCount ?? 0),
+          ordersCount: Number(r.orderCount ?? 0),
+          gmv: Number(r.totalRevenue ?? 0),
+          tryOnUsed: Number(r.subscription?.tryOnUsed ?? 0),
+          tryOnQuota: Number(r.subscription?.tryOnMonthlyQuota ?? 0),
+          joinedDate: r.createdAt ? new Date(r.createdAt).toISOString().slice(0, 10) : prev?.joinedDate || '',
         };
       });
-      const liveIds = new Set(mergedLive.map((m) => m.id));
-      const remainingDemo = state.tenants.filter((d) => !liveIds.has(d.id));
-      state.tenants = [...mergedLive, ...remainingDemo];
     },
     setLiveAuditLogs: (state, action: PayloadAction<any[]>) => {
       const raw = action.payload;
-      if (!Array.isArray(raw) || raw.length === 0) return;
+      if (!Array.isArray(raw)) return;
       state.auditEvents = raw.map((l: any, i: number) => ({
         id: l.id || `AUD-LIVE-${i}`,
         action: l.action || 'EVENT',
@@ -303,31 +284,30 @@ export const platformSlice = createSlice({
     },
     setLiveGenerations: (state, action: PayloadAction<any[]>) => {
       const raw = action.payload;
-      if (!Array.isArray(raw) || raw.length === 0) return;
+      if (!Array.isArray(raw)) return;
       const mapped: TryOnJobRecord[] = raw.map((j: any) => ({
         id: j.id,
         tenantId: j.tenantId,
         tenantName: state.tenants.find((t) => t.id === j.tenantId)?.name || j.tenantId,
         productId: j.productId || 'unknown',
         productName: j.productName || j.productId || 'Garment SKU',
-        modelId: j.model || 'gemini-3.6-flash',
-        provider: j.provider || 'gemini',
+        modelId: j.model || 'unknown',
+        provider: j.provider || 'unknown',
         status: (j.status || 'COMPLETED') as TryOnJobRecord['status'],
-        durationMs: Number(j.latencyMs || 1400),
+        durationMs: Number(j.latencyMs || 0),
         creditsConsumed: j.status === 'FAILED' ? 0 : 1,
-        estProviderCostUsd: 0.032,
+        estProviderCostUsd: Number(j.estProviderCostUsd ?? 0),
         retryCount: Number(j.retryCount || 0),
         errorMessage: j.error || undefined,
         privateMediaRedacted: true,
         createdAt: j.createdAt ? new Date(j.createdAt).toLocaleString('en-US') : '',
       }));
-      const liveIds = new Set(mapped.map((m) => m.id));
-      state.tryOnJobs = [...mapped, ...state.tryOnJobs.filter((d) => !liveIds.has(d.id))];
+      state.tryOnJobs = mapped;
     },
     hydrateControlPlaneSnapshot: (state, action: PayloadAction<any>) => {
       const snap = action.payload;
       if (!snap || typeof snap !== 'object') return;
-      if (Array.isArray(snap.users) && snap.users.length > 0) {
+      if (Array.isArray(snap.users)) {
         state.users = snap.users.map((u: any) => ({
           id: u.id,
           name: u.name,
@@ -340,7 +320,7 @@ export const platformSlice = createSlice({
           lastLoginAt: u.createdAt || 'Live',
         }));
       }
-      if (Array.isArray(snap.featureFlags) && snap.featureFlags.length > 0) {
+      if (Array.isArray(snap.featureFlags)) {
         state.featureFlags = snap.featureFlags.map((f: any) => ({
           key: f.key,
           name: f.name,
@@ -354,7 +334,7 @@ export const platformSlice = createSlice({
           })),
         }));
       }
-      if (Array.isArray(snap.moderationProducts) && snap.moderationProducts.length > 0) {
+      if (Array.isArray(snap.moderationProducts)) {
         state.modProducts = snap.moderationProducts.map((p: any) => ({
           id: p.productId,
           productName: p.productName,
@@ -370,11 +350,15 @@ export const platformSlice = createSlice({
           sponsored: Boolean(p.sponsored),
         }));
       }
-      if (Array.isArray(snap.cmsPages) && snap.cmsPages.length > 0) state.cmsPages = snap.cmsPages;
-      if (Array.isArray(snap.webhooks) && snap.webhooks.length > 0) state.webhooks = snap.webhooks;
-      if (Array.isArray(snap.creditLedger) && snap.creditLedger.length > 0) {
+      if (Array.isArray(snap.cmsPages)) state.cmsPages = snap.cmsPages;
+      if (Array.isArray(snap.webhooks)) state.webhooks = snap.webhooks;
+      if (Array.isArray(snap.creditLedger)) {
         state.creditLedger = snap.creditLedger;
       }
+    },
+
+    setAdminEmail: (state, action: PayloadAction<string>) => {
+      state.adminEmail = action.payload;
     },
 
     setActiveRole: (state, action: PayloadAction<PlatformRole>) => {

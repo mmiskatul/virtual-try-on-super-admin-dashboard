@@ -3,8 +3,6 @@ import type { RootState } from './index';
 
 export const selectPlatformState = (state: RootState) => state.platform;
 export const selectAdminUiState = (state: RootState) => state.adminUi;
-export const selectTenantState = (state: RootState) => state.tenant;
-export const selectAuditState = (state: RootState) => state.audit;
 
 export const selectOpenAlerts = createSelector(
   [(state: RootState) => state.platform.alerts],
