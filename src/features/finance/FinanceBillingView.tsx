@@ -14,7 +14,7 @@ import {
 import { usePlatformStore } from '../../stores/usePlatformStore';
 import { useAdminUiStore } from '../../stores/useAdminUiStore';
 import { useMounted } from '../../hooks/useMounted';
-import { canAdminPerform } from '../../config/permissions';
+import { usePermissions } from '../../hooks/usePermissions';
 import {
   AdminPageHeader,
   AdminPermissionGate,
@@ -40,25 +40,21 @@ export function FinanceBillingView({
   initialTab?: FinanceTab;
 }) {
   const mounted = useMounted();
-  const activeRole = usePlatformStore((s) => s.activeRole);
-  const roleOverrides = usePlatformStore((s) => s.roleOverrides);
+  const { can } = usePermissions();
   const transactions = usePlatformStore((s) => s.transactions);
   const invoices = usePlatformStore((s) => s.invoices);
   const refunds = usePlatformStore((s) => s.refunds);
-  const reconciliations = usePlatformStore((s) => s.reconciliations);
   const updateRefundStatus = usePlatformStore((s) => s.updateRefundStatus);
-  const updateReconciliationStatus = usePlatformStore((s) => s.updateReconciliationStatus);
   const showToast = useAdminUiStore((s) => s.showToast);
   const hideToast = useAdminUiStore((s) => s.hideToast);
 
   const [tab, setTab] = useState<FinanceTab>(initialTab);
   const [confirmRefund, setConfirmRefund] = useState<{ id: string; amount: number } | null>(null);
 
-  const canRefund = canAdminPerform(activeRole, 'finance', 'refund', roleOverrides);
+  const canRefund = can('finance', 'refund');
   const safeTx = mounted ? transactions : [];
   const safeInv = mounted ? invoices : [];
   const safeRefunds = mounted ? refunds : [];
-  const safeRecon = mounted ? reconciliations : [];
 
   const gross = safeTx.filter((t) => t.status === 'SUCCEEDED').reduce((s, t) => s + t.amount, 0);
   const refundedSum = safeRefunds
@@ -66,7 +62,7 @@ export function FinanceBillingView({
     .reduce((s, r) => s + r.amount, 0);
   const net = gross - refundedSum;
   const failedCount = safeTx.filter((t) => t.status === 'FAILED').length;
-  const unresolvedRecon = safeRecon.filter((r) => r.status !== 'RESOLVED').length;
+  const pendingRefunds = safeRefunds.filter((r) => r.status === 'REQUESTED').length;
 
   const notify = (msg: string) => {
     showToast(msg);
@@ -89,7 +85,6 @@ export function FinanceBillingView({
             ['invoices', 'Invoices', '/admin/finance/invoices'],
             ['refunds', 'Refunds', '/admin/finance/refunds'],
             ['failed-payments', 'Failed Payments', '/admin/finance/failed-payments'],
-            ['reconciliation', 'Reconciliation', '/admin/finance/reconciliation'],
           ].map(([id, lbl, href]) => (
             <Link
               key={id}
@@ -116,7 +111,7 @@ export function FinanceBillingView({
           <MetricCard label="Settled Sample Revenue" value={`৳${gross.toFixed(2)}`} icon={<DollarSign className="w-4 h-4 text-emerald-600" />} />
           <MetricCard label="Net Settled" value={`৳${net.toFixed(2)}`} icon={<CreditCard className="w-4 h-4 text-indigo-600" />} />
           <MetricCard label="Failed Payments" value={failedCount} positive={failedCount === 0} icon={<AlertCircle className="w-4 h-4 text-rose-600" />} />
-          <MetricCard label="Open Reconciliations" value={unresolvedRecon} positive={unresolvedRecon === 0} icon={<RotateCcw className="w-4 h-4 text-amber-600" />} />
+          <MetricCard label="Refunds Awaiting Approval" value={pendingRefunds} positive={pendingRefunds === 0} icon={<RotateCcw className="w-4 h-4 text-amber-600" />} />
         </div>
 
         {(tab === 'overview' || tab === 'transactions' || tab === 'failed-payments') && (
@@ -244,37 +239,6 @@ export function FinanceBillingView({
           </SectionPanel>
         )}
 
-        {(tab === 'overview' || tab === 'reconciliation') && (
-          <SectionPanel title="Billing Reconciliation Exceptions" subtitle="Track webhook gaps and settlement amount mismatches.">
-            <div className="space-y-2 text-xs">
-              {safeRecon.map((rec) => (
-                <div key={rec.id} className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 p-3 rounded-lg border border-slate-200">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-bold text-slate-900 break-words">{rec.id} — {rec.provider} ({rec.type})</p>
-                    <p className="text-slate-500 break-words">{rec.notes} • Expected ${rec.expectedAmount}, Provider ${rec.providerAmount}</p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 shrink-0">
-                    <StatusPill status={rec.status} />
-                    {rec.status !== 'RESOLVED' && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          updateReconciliationStatus(rec.id, 'RESOLVED');
-                          notify(`Resolved reconciliation exception ${rec.id}.`);
-                        }}
-                        className="h-7 px-2 text-[11px]"
-                      >
-                        Mark Resolved
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </SectionPanel>
-        )}
-
         <ConfirmActionDialog
           open={Boolean(confirmRefund)}
           title={`Authorize Provider Refund (৳${confirmRefund?.amount.toFixed(2)})?`}
@@ -286,12 +250,12 @@ export function FinanceBillingView({
               : undefined
           }
           confirmLabel="Submit to Provider Queue"
-          onConfirm={() => {
-            if (confirmRefund) {
-              updateRefundStatus(confirmRefund.id, 'APPROVED_PENDING_PROVIDER');
-              notify(`Queued ${confirmRefund.id} awaiting provider confirmation.`);
-            }
+          onConfirm={async () => {
+            const target = confirmRefund;
             setConfirmRefund(null);
+            if (target && (await updateRefundStatus(target.id, 'APPROVED_PENDING_PROVIDER'))) {
+              notify(`Queued ${target.id} awaiting provider confirmation.`);
+            }
           }}
           onCancel={() => setConfirmRefund(null)}
         />
