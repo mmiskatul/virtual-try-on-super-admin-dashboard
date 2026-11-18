@@ -34,26 +34,20 @@ import {
   WebhookSubscription,
 } from '../../types';
 import {
-  DEMO_AI_MODELS,
   DEMO_AI_PROVIDERS,
   DEMO_AI_ROUTING,
   DEMO_ALERTS,
   DEMO_CATEGORIES,
   DEMO_COLLECTIONS,
-  DEMO_DATA_REQUESTS,
-  DEMO_INVOICES,
   DEMO_MKT_REPORTS,
   DEMO_MOD_BRANDS,
   DEMO_PLATFORM_SETTINGS,
-  DEMO_PLANS,
   DEMO_RECONCILIATIONS,
-  DEMO_REFUNDS,
   DEMO_SECURITY_EVENTS,
-  DEMO_SUBSCRIPTIONS,
-  DEMO_TICKETS,
   DEMO_TRANSACTIONS,
 } from '../../data/platformDemoSeed';
 import { DEFAULT_ADMIN_PERMISSIONS } from '../../config/permissions';
+import { mapControlPlaneSnapshot } from '../../lib/controlPlaneMappers';
 
 export interface PlatformSliceState {
   _hydrated: boolean;
@@ -135,15 +129,15 @@ const initialState: PlatformSliceState = {
 
   tenants: [],
   users: [],
-  plans: DEMO_PLANS,
-  subscriptions: DEMO_SUBSCRIPTIONS,
+  plans: [],
+  subscriptions: [],
   transactions: DEMO_TRANSACTIONS,
-  invoices: DEMO_INVOICES,
-  refunds: DEMO_REFUNDS,
+  invoices: [],
+  refunds: [],
   reconciliations: DEMO_RECONCILIATIONS,
 
   aiProviders: DEMO_AI_PROVIDERS,
-  aiModels: DEMO_AI_MODELS,
+  aiModels: [],
   aiRouting: DEMO_AI_ROUTING,
   tryOnJobs: [],
   creditLedger: [],
@@ -155,11 +149,11 @@ const initialState: PlatformSliceState = {
   mktReports: DEMO_MKT_REPORTS,
 
   cmsPages: [],
-  tickets: DEMO_TICKETS,
+  tickets: [],
   alerts: DEMO_ALERTS,
   securityEvents: DEMO_SECURITY_EVENTS,
   auditEvents: [],
-  dataRequests: DEMO_DATA_REQUESTS,
+  dataRequests: [],
   featureFlags: [],
   webhooks: [],
   settings: DEMO_PLATFORM_SETTINGS,
@@ -304,57 +298,15 @@ export const platformSlice = createSlice({
       }));
       state.tryOnJobs = mapped;
     },
+    // The backend snapshot is mapped onto the dashboard's record types in lib/controlPlaneMappers.ts.
+    // Only collections the backend actually sent are replaced (an empty array means "none").
     hydrateControlPlaneSnapshot: (state, action: PayloadAction<any>) => {
-      const snap = action.payload;
-      if (!snap || typeof snap !== 'object') return;
-      if (Array.isArray(snap.users)) {
-        state.users = snap.users.map((u: any) => ({
-          id: u.id,
-          name: u.name,
-          email: u.email,
-          role: u.role,
-          tenantId: u.tenantId || undefined,
-          status: u.status === 'SUSPENDED' ? 'SUSPENDED' : 'ACTIVE',
-          mfaEnabled: Boolean(u.mfaEnabled),
-          emailVerified: Boolean(u.emailVerified),
-          lastLoginAt: u.createdAt || 'Live',
-        }));
-      }
-      if (Array.isArray(snap.featureFlags)) {
-        state.featureFlags = snap.featureFlags.map((f: any) => ({
-          key: f.key,
-          name: f.name,
-          description: f.description,
-          owner: f.owner,
-          globalEnabled: Boolean(f.globalEnabled),
-          rolloutPercentage: Number(f.rolloutPct ?? 100),
-          tenantOverrides: Object.entries(f.overrides || {}).map(([tid, enabled]) => ({
-            tenantId: tid,
-            enabled: Boolean(enabled),
-          })),
-        }));
-      }
-      if (Array.isArray(snap.moderationProducts)) {
-        state.modProducts = snap.moderationProducts.map((p: any) => ({
-          id: p.productId,
-          productName: p.productName,
-          sku: p.sku,
-          brandName: p.brandName,
-          category: p.category,
-          price: Number(p.price || 0),
-          image: p.image || '',
-          marketplacePublished: Boolean(p.marketplacePublished),
-          moderationStatus: p.moderationStatus || 'APPROVED',
-          moderationNote: p.moderationNote,
-          featured: Boolean(p.featured),
-          sponsored: Boolean(p.sponsored),
-        }));
-      }
-      if (Array.isArray(snap.cmsPages)) state.cmsPages = snap.cmsPages;
-      if (Array.isArray(snap.webhooks)) state.webhooks = snap.webhooks;
-      if (Array.isArray(snap.creditLedger)) {
-        state.creditLedger = snap.creditLedger;
-      }
+      const mapped = mapControlPlaneSnapshot(action.payload, {
+        tenantNames: new Map(state.tenants.map((t) => [t.id, t.name])),
+        currentAiRouting: state.aiRouting,
+        currentSettings: state.settings,
+      });
+      Object.assign(state, mapped);
     },
 
     setAdminEmail: (state, action: PayloadAction<string>) => {
