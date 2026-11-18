@@ -5,6 +5,24 @@
 
 export const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:4000';
 
+export interface RbacCatalog {
+  roles: Array<{
+    code: string;
+    name: string;
+    description: string;
+    scope: 'PLATFORM' | 'TENANT' | 'CUSTOMER';
+    isSystem: boolean;
+    mfaRequired: boolean;
+    permissions: string[];
+  }>;
+  permissions: Array<{ module: string; action: string; description: string }>;
+}
+
+export interface TenantAdminContext {
+  notes: Array<{ id: string; note: string; author: string; createdAt: string }>;
+  assignedSupportAgent: { id: string; name: string } | null;
+}
+
 export class ApiError extends Error {
   constructor(public status: number, message: string, public data?: any) {
     super(message);
@@ -194,6 +212,19 @@ export const superAdminApi = {
     });
   },
 
+  /** The signed-in admin's real role and permission keys (e.g. "tenants:read", or "*:*" for Super Admin). */
+  getRbacMe: () => {
+    return request<{
+      success: boolean;
+      data: { userId: string; role: string; roleCodes: string[]; permissions: string[] };
+    }>(`${BACKEND_API_URL}/api/v1/auth/rbac/me`, { method: 'GET', cache: 'no-store' });
+  },
+
+  /** The full role and permission catalog. Needs the staff:manage permission. */
+  getRbacRoles: () => {
+    return request<{ success: boolean; data: RbacCatalog }>(`${BACKEND_API_URL}/api/v1/admin/rbac/roles`);
+  },
+
   // Platform Analytics Overview
   getOverview: () => {
     return request<{
@@ -271,39 +302,36 @@ export const superAdminApi = {
     });
   },
 
-  // SMTP & Supabase Database Infrastructure
+  // Resend email & Supabase/PostgreSQL Database Infrastructure
   getInfrastructureConfig: () => {
     return request<any>(`${BACKEND_API_URL}/api/v1/admin/infrastructure/config`);
   },
 
-  saveSmtpConfig: (payload: {
-    host?: string;
-    port?: number;
-    secure?: boolean;
-    user?: string;
-    pass?: string;
-    from?: string;
-  }) => {
-    return request<any>(`${BACKEND_API_URL}/api/v1/admin/infrastructure/smtp`, {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    });
+  /** Saves the Resend API key and/or From header (POST /infrastructure/resend). Leave `apiKey` out to keep the stored key. */
+  saveResendConfig: (payload: { apiKey?: string; from?: string; clearApiKey?: boolean }) => {
+    return request<{ success: boolean; activeTransport: string; message: string }>(
+      `${BACKEND_API_URL}/api/v1/admin/infrastructure/resend`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      }
+    );
   },
 
-  testSmtpConfig: (payload: {
+  /** Verifies a Resend key, or sends a real test email (POST /infrastructure/resend/test). */
+  testResendConfig: (payload: {
     action: 'verify' | 'send';
     testRecipient?: string;
-    host?: string;
-    port?: number;
-    secure?: boolean;
-    user?: string;
-    pass?: string;
+    apiKey?: string;
     from?: string;
   }) => {
-    return request<any>(`${BACKEND_API_URL}/api/v1/admin/infrastructure/smtp/test`, {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    });
+    return request<{ success: boolean; message: string }>(
+      `${BACKEND_API_URL}/api/v1/admin/infrastructure/resend/test`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      }
+    );
   },
 
   testDatabaseConfig: (payload: { databaseUrl?: string }) => {
@@ -383,6 +411,70 @@ export const superAdminApi = {
   updateAiRouting: (payload: Record<string, unknown>) => {
     return request<{ success: boolean; data: any }>(`${BACKEND_API_URL}/api/v1/admin/ai/routing`, {
       method: 'PUT',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  cancelSubscription: (tenantId: string, reason: string) => {
+    return request<{ success: boolean; data: { subscription: any } }>(
+      `${BACKEND_API_URL}/api/v1/admin/subscriptions/${encodeURIComponent(tenantId)}/cancel`,
+      { method: 'POST', body: JSON.stringify({ reason }) }
+    );
+  },
+
+  extendTrial: (tenantId: string, days: number) => {
+    return request<{ success: boolean; data: { subscription: any } }>(
+      `${BACKEND_API_URL}/api/v1/admin/subscriptions/${encodeURIComponent(tenantId)}/extend-trial`,
+      { method: 'POST', body: JSON.stringify({ days }) }
+    );
+  },
+
+  getTenantAdminContext: (tenantId: string) => {
+    return request<{ success: boolean; data: TenantAdminContext }>(
+      `${BACKEND_API_URL}/api/v1/admin/tenants/${encodeURIComponent(tenantId)}/admin-context`
+    );
+  },
+
+  addTenantNote: (tenantId: string, note: string) => {
+    return request<{ success: boolean; data: TenantAdminContext }>(
+      `${BACKEND_API_URL}/api/v1/admin/tenants/${encodeURIComponent(tenantId)}/notes`,
+      { method: 'POST', body: JSON.stringify({ note }) }
+    );
+  },
+
+  assignSupportAgent: (tenantId: string, agentId: string) => {
+    return request<{ success: boolean; data: TenantAdminContext }>(
+      `${BACKEND_API_URL}/api/v1/admin/tenants/${encodeURIComponent(tenantId)}/support-agent`,
+      { method: 'PUT', body: JSON.stringify({ agentId }) }
+    );
+  },
+
+  updateTicket: (
+    ticketId: string,
+    payload: {
+      status?: string;
+      priority?: string;
+      assignedAgent?: string;
+      message?: string;
+      internal?: boolean;
+    }
+  ) => {
+    return request<{ success: boolean; data: any }>(`${BACKEND_API_URL}/api/v1/admin/support/tickets/${encodeURIComponent(ticketId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  updateRefundStatus: (refundId: string, payload: { status: 'APPROVED' | 'REJECTED' | 'PROCESSED'; note?: string }) => {
+    return request<{ success: boolean; data: any }>(`${BACKEND_API_URL}/api/v1/admin/finance/refunds/${encodeURIComponent(refundId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  updateDataRequest: (requestId: string, payload: { status: 'PENDING_REVIEW' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED' }) => {
+    return request<{ success: boolean; data: any }>(`${BACKEND_API_URL}/api/v1/admin/governance/requests/${encodeURIComponent(requestId)}`, {
+      method: 'PATCH',
       body: JSON.stringify(payload)
     });
   },
