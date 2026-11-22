@@ -31,6 +31,6 @@ npm start
 ## Features
 - **Platform Overview:** Global tenant counts (Active vs. Suspended), platform GMV, total AI fittings
 - **Tenant Access Governance:** Searchable directory with instantaneous one-click Suspend / Reactivate controls
-- **AI Infrastructure Monitor:** Status of `ai-service`, active adapter, latency metrics, and success rates
+- **AI Infrastructure Monitor:** Gemini key status and models, and try-on totals and success rate (try-on runs inside the backend)
 - **Subscription Quotas:** Free, Pro, and Enterprise entitlement management
 - **Audit Logs:** Immutable trail of administrative actions
