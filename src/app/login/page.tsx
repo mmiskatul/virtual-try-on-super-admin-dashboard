@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn, getSession, useSession } from 'next-auth/react';
@@ -25,9 +25,16 @@ function sanitizeCallbackUrl(raw: string | null): string {
 function AdminLoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
 
   const callbackUrl = sanitizeCallbackUrl(searchParams.get('callbackUrl'));
+
+  // Already signed in: skip the login page and go straight to the console.
+  useEffect(() => {
+    if (status === 'authenticated') {
+      router.replace(callbackUrl);
+    }
+  }, [status, callbackUrl, router]);
   const verifiedParam = searchParams.get('verified');
   const resetParam = searchParams.get('reset');
   const prefillEmail = searchParams.get('email') || '';
